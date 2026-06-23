@@ -1,0 +1,109 @@
+"""Métricas y estadísticas del dashboard."""
+from datetime import date, timedelta
+from decimal import Decimal
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.models import LotePago, Pago, Proveedor
+from app.schemas.dashboard import DashboardResumen, DashboardResponse, TopProveedor
+
+
+def obtener_dashboard(
+    db: Session,
+    *,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+    top_dias: int = 90,
+) -> DashboardResponse:
+    if not fecha_hasta:
+        fecha_hasta = date.today()
+    if not fecha_desde:
+        fecha_desde = fecha_hasta - timedelta(days=30)
+
+    filtros = [
+        LotePago.fecha_operacion >= fecha_desde,
+        LotePago.fecha_operacion <= fecha_hasta,
+        Pago.estado != "anulado",
+        LotePago.estado != "anulado",
+    ]
+
+    importe_total = db.scalar(
+        select(func.coalesce(func.sum(Pago.importe), 0))
+        .join(LotePago, Pago.lote_id == LotePago.id)
+        .where(*filtros)
+    ) or Decimal("0")
+
+    cantidad_pagos = db.scalar(
+        select(func.count(Pago.id)).join(LotePago, Pago.lote_id == LotePago.id).where(*filtros)
+    ) or 0
+
+    cantidad_proveedores = db.scalar(
+        select(func.count(func.distinct(Pago.proveedor_id)))
+        .join(LotePago, Pago.lote_id == LotePago.id)
+        .where(*filtros)
+    ) or 0
+
+    cantidad_lotes = db.scalar(
+        select(func.count(func.distinct(LotePago.id)))
+        .join(Pago, Pago.lote_id == LotePago.id)
+        .where(*filtros)
+    ) or 0
+
+    top_desde = fecha_hasta - timedelta(days=top_dias)
+    top_rows = db.execute(
+        select(
+            Pago.proveedor_id,
+            Proveedor.razon_social,
+            func.sum(Pago.importe).label("total"),
+            func.count(Pago.id).label("cnt"),
+        )
+        .join(LotePago, Pago.lote_id == LotePago.id)
+        .join(Proveedor, Proveedor.id == Pago.proveedor_id)
+        .where(
+            LotePago.fecha_operacion >= top_desde,
+            LotePago.fecha_operacion <= fecha_hasta,
+            Pago.estado != "anulado",
+        )
+        .group_by(Pago.proveedor_id, Proveedor.razon_social)
+        .order_by(func.sum(Pago.importe).desc())
+        .limit(10)
+    ).all()
+
+    ultimos = db.scalars(
+        select(LotePago)
+        .where(LotePago.estado != "anulado")
+        .order_by(LotePago.fecha_operacion.desc())
+        .limit(5)
+    ).all()
+
+    return DashboardResponse(
+        resumen=DashboardResumen(
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            importe_total=Decimal(importe_total),
+            cantidad_proveedores=cantidad_proveedores,
+            cantidad_lotes=cantidad_lotes,
+            cantidad_pagos=cantidad_pagos,
+        ),
+        top_proveedores=[
+            TopProveedor(
+                proveedor_id=r.proveedor_id,
+                razon_social=r.razon_social,
+                total_pagado=Decimal(r.total),
+                cantidad_pagos=r.cnt,
+            )
+            for r in top_rows
+        ],
+        ultimos_lotes=[
+            {
+                "id": l.id,
+                "fecha_operacion": l.fecha_operacion.isoformat(),
+                "estado": l.estado,
+                "importe_total": str(l.importe_total),
+                "cantidad_pagos": l.cantidad_pagos,
+                "concepto": l.concepto_general,
+            }
+            for l in ultimos
+        ],
+    )
