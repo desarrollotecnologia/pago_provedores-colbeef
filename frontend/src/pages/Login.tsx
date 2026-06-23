@@ -1,17 +1,23 @@
 import { FormEvent, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import BrandLogoBox from "../components/BrandLogoBox";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const { user, loading, login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from ?? "/";
+
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && user) return <Navigate to="/" replace />;
+  if (!loading && user) {
+    return <Navigate to={from} replace />;
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -19,6 +25,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login(usuario.trim(), password);
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Credenciales incorrectas");
     } finally {

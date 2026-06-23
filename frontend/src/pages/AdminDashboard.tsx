@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
@@ -25,8 +25,9 @@ export default function AdminDashboard() {
       const [dash, smtpStatus] = await Promise.all([api.dashboard(), api.smtpStatus()]);
       setData(dash);
       setSmtp(smtpStatus);
-    } catch {
-      setError("No se pudo cargar el dashboard administrativo.");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "No se pudo cargar el dashboard administrativo.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

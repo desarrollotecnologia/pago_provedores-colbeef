@@ -57,12 +57,18 @@ class Settings:
             Path.home() / "Downloads" / "MODELO PAGO PROVEEDORES (1).xls"
         )
 
-        # CORS — si no se define, usa APP_URL automáticamente
+        # CORS — incluir localhost y la URL pública (IP o dominio)
         cors = _env("CORS_ORIGINS")
+        port = self.api_port
+        defaults = {
+            self.app_url,
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        }
         if cors:
-            self.cors_origins = [o.strip() for o in cors.split(",") if o.strip()]
+            self.cors_origins = list(defaults | {o.strip() for o in cors.split(",") if o.strip()})
         else:
-            self.cors_origins = [self.app_url, "http://localhost:5173", "http://127.0.0.1:5173"]
+            self.cors_origins = list(defaults)
 
         # Archivo plano
         self.ciudad_default = _env("CIUDAD_DEFAULT", "BOGOTA")

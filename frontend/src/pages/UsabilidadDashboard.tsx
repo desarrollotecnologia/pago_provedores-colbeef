@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import { track } from "../telemetry/tracker";
 import type { UsabilityStats } from "../types";
 
@@ -85,8 +85,14 @@ export default function UsabilidadDashboard() {
       const stats = await api.usabilityStats(days);
       setData(stats);
       track("module_open", "estadisticas_admin", `Consulta stats ${days} días`);
-    } catch {
-      setError("No se pudieron cargar las estadísticas.");
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "No se pudieron cargar las estadísticas.";
+      setError(
+        `${msg} — Si es la primera vez, ejecute create_tables en el servidor para crear eventos_usabilidad.`
+      );
     } finally {
       setLoading(false);
     }

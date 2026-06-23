@@ -43,8 +43,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${API}${path}`, { ...options, headers });
   if (res.status === 401) {
-    clearSession();
-    onUnauthorized?.();
+    const isLogin = path === "/auth/login" || path.endsWith("/auth/login");
+    if (!isLogin) {
+      clearSession();
+      onUnauthorized?.();
+    }
     throw new ApiError("Sesión expirada o no autorizada", 401);
   }
   if (!res.ok) {

@@ -29,20 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearSession();
-    localStorage.removeItem("token"); // migración: limpiar token antiguo
     setUser(null);
   }, []);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
       setUser(null);
-      window.location.href = "/login";
     });
   }, []);
 
   useEffect(() => {
     api.config().then(setConfig).catch(() => null);
-    localStorage.removeItem("token"); // no usar token persistente entre sesiones
     const token = getToken();
     if (!token) {
       setLoading(false);
