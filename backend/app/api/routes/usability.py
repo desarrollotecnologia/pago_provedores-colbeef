@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_admin
+from app.api.deps import get_current_user, require_operador
 from app.core.database import get_db
 from app.models import Usuario
 from app.schemas.usability import UsabilityEventIn, UsabilityEventOut, UsabilityStatsResponse
@@ -38,7 +38,7 @@ def registrar_evento(
 def estadisticas_usabilidad(
     days: int = Query(30, ge=7, le=90),
     db: Session = Depends(get_db),
-    _: Usuario = Depends(require_admin),
+    _: Usuario = Depends(require_operador),
 ):
-    """Dashboard de usabilidad — solo administradores."""
-    return svc.obtener_estadisticas(db, days=days)
+    """Estadísticas de uso del administrador — solo usuario panel (operador)."""
+    return svc.obtener_estadisticas(db, days=days, solo_admin=True)

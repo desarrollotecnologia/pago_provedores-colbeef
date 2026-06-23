@@ -82,70 +82,80 @@ def registrar_evento(
     return evento
 
 
-def obtener_estadisticas(db: Session, *, days: int = 30) -> dict:
+def obtener_estadisticas(db: Session, *, days: int = 30, solo_admin: bool = False) -> dict:
     days = min(max(days, 1), 90)
     since = _now() - timedelta(days=days)
 
-    base = select(EventoUsabilidad).where(EventoUsabilidad.timestamp >= since)
+    filtro_admin = None
+    if solo_admin:
+        from app.models import Usuario
+
+        filtro_admin = list(
+            db.scalars(select(Usuario.username).where(Usuario.rol == "admin")).all()
+        )
+        if not filtro_admin:
+            filtro_admin = ["__none__"]
+
+    def _base_filter(stmt):
+        stmt = stmt.where(EventoUsabilidad.timestamp >= since)
+        if filtro_admin is not None:
+            stmt = stmt.where(EventoUsabilidad.usuario.in_(filtro_admin))
+        return stmt
 
     total_eventos = db.scalar(
-        select(func.count()).select_from(base.subquery())
+        select(func.count()).select_from(
+            _base_filter(select(EventoUsabilidad)).subquery()
+        )
     ) or 0
 
     usuarios_unicos = db.scalar(
-        select(func.count(func.distinct(EventoUsabilidad.usuario))).where(
-            EventoUsabilidad.timestamp >= since
-        )
+        _base_filter(select(func.count(func.distinct(EventoUsabilidad.usuario))))
     ) or 0
 
     sesiones_unicas = db.scalar(
-        select(func.count(func.distinct(EventoUsabilidad.session_id))).where(
-            EventoUsabilidad.timestamp >= since
-        )
+        _base_filter(select(func.count(func.distinct(EventoUsabilidad.session_id))))
     ) or 0
 
     ultimo = db.scalar(
-        select(EventoUsabilidad)
-        .where(EventoUsabilidad.timestamp >= since)
+        _base_filter(select(EventoUsabilidad))
         .order_by(EventoUsabilidad.timestamp.desc())
         .limit(1)
     )
 
     eventos_por_dia = db.execute(
-        select(
-            func.date(EventoUsabilidad.timestamp).label("dia"),
-            func.count().label("total"),
+        _base_filter(
+            select(
+                func.date(EventoUsabilidad.timestamp).label("dia"),
+                func.count().label("total"),
+            )
         )
-        .where(EventoUsabilidad.timestamp >= since)
         .group_by(func.date(EventoUsabilidad.timestamp))
         .order_by(func.date(EventoUsabilidad.timestamp))
     ).all()
 
     top_usuarios = db.execute(
-        select(EventoUsabilidad.usuario, func.count().label("total"))
-        .where(EventoUsabilidad.timestamp >= since)
+        _base_filter(
+            select(EventoUsabilidad.usuario, func.count().label("total"))
+        )
         .group_by(EventoUsabilidad.usuario)
         .order_by(func.count().desc())
         .limit(10)
     ).all()
 
     por_modulo = db.execute(
-        select(EventoUsabilidad.module, func.count().label("total"))
-        .where(EventoUsabilidad.timestamp >= since)
+        _base_filter(select(EventoUsabilidad.module, func.count().label("total")))
         .group_by(EventoUsabilidad.module)
         .order_by(func.count().desc())
     ).all()
 
     por_accion = db.execute(
-        select(EventoUsabilidad.action, func.count().label("total"))
-        .where(EventoUsabilidad.timestamp >= since)
+        _base_filter(select(EventoUsabilidad.action, func.count().label("total")))
         .group_by(EventoUsabilidad.action)
         .order_by(func.count().desc())
     ).all()
 
     recientes = db.scalars(
-        select(EventoUsabilidad)
-        .where(EventoUsabilidad.timestamp >= since)
+        _base_filter(select(EventoUsabilidad))
         .order_by(EventoUsabilidad.timestamp.desc())
         .limit(150)
     ).all()

@@ -1,7 +1,7 @@
 /**
  * Tracker ligero de usabilidad — no bloquea la UI.
- * No registrar contraseñas, tokens ni datos sensibles.
  */
+import { getToken } from "../auth/session";
 
 export type UsabilityAction =
   | "session_start"
@@ -31,7 +31,7 @@ export function getSessionId(): string {
 }
 
 function canTrack(): boolean {
-  return Boolean(localStorage.getItem("token"));
+  return Boolean(getToken());
 }
 
 export function track(
@@ -64,7 +64,7 @@ export function track(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${getToken()}`,
     },
     body: JSON.stringify(body),
     keepalive: true,

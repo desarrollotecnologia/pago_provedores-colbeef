@@ -30,7 +30,9 @@ export default function Login() {
       <div className="login-bg-pattern" />
       <div className="login-container">
         <div className="login-brand">
-          <div className="sidebar-logo login-logo">CB</div>
+          <div className="login-logo-box">
+            <img src="/logo-pago.svg" alt="Pago Proveedores" className="login-logo-img" />
+          </div>
           <div>
             <h1>Pago Proveedores</h1>
             <p>Colbeef · Sistema interno de tesorería</p>
@@ -75,7 +77,7 @@ export default function Login() {
           </form>
 
           <p className="login-security-note">
-            Acceso restringido. Las acciones quedan registradas por usuario y rol.
+            La sesión es privada por navegador. Compartir un enlace no da acceso sin credenciales.
           </p>
         </div>
       </div>

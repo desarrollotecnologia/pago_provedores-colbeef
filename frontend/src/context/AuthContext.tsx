@@ -7,7 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api } from "../api/client";
+import { api, setUnauthorizedHandler } from "../api/client";
+import { clearSession, getToken, setToken } from "../auth/session";
 import { trackSessionStart } from "../telemetry/tracker";
 import type { PublicConfig, UsuarioAuth } from "../types";
 
@@ -26,9 +27,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<PublicConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    clearSession();
+    localStorage.removeItem("token"); // migración: limpiar token antiguo
+    setUser(null);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setUser(null);
+      window.location.href = "/login";
+    });
+  }, []);
+
   useEffect(() => {
     api.config().then(setConfig).catch(() => null);
-    const token = localStorage.getItem("token");
+    localStorage.removeItem("token"); // no usar token persistente entre sesiones
+    const token = getToken();
     if (!token) {
       setLoading(false);
       return;
@@ -39,20 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(u);
         trackSessionStart(u.rol);
       })
-      .catch(() => localStorage.removeItem("token"))
+      .catch(() => {
+        clearSession();
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(async (usuario: string, password: string) => {
     const res = await api.login(usuario, password);
-    localStorage.setItem("token", res.access_token);
+    setToken(res.access_token);
     setUser(res.usuario);
     trackSessionStart(res.usuario.rol);
-  }, []);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setUser(null);
   }, []);
 
   const value = useMemo(

@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
+import { getToken } from "../auth/session";
 import { trackAction } from "../telemetry/tracker";
 import InfoLote from "../components/InfoLote";
 import StatusBadge from "../components/StatusBadge";
@@ -100,7 +101,7 @@ export default function LoteDetail() {
   };
 
   const downloadArchivo = () => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     const url = api.descargarArchivoUrl(loteId);
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.blob())

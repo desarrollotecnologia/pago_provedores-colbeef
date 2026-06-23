@@ -52,5 +52,15 @@ def require_admin(current_user: Usuario = Depends(get_current_user)) -> Usuario:
     return current_user
 
 
+def require_operador(current_user: Usuario = Depends(get_current_user)) -> Usuario:
+    """Usuario panel — solo consulta estadísticas de usabilidad."""
+    if current_user.rol != "operador":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de supervisor (operador)",
+        )
+    return current_user
+
+
 def normalizar_nombre(nombre: str) -> str:
     return nombre.strip().lower()

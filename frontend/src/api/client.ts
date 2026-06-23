@@ -15,7 +15,15 @@ import type {
   UsuarioAuth,
 } from "../types";
 
+import { getToken, setToken, clearSession } from "../auth/session";
+
 const API = "/api";
+
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler;
+}
 
 class ApiError extends Error {
   status: number;
@@ -23,10 +31,6 @@ class ApiError extends Error {
     super(message);
     this.status = status;
   }
-}
-
-function getToken(): string | null {
-  return localStorage.getItem("token");
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -38,6 +42,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API}${path}`, { ...options, headers });
+  if (res.status === 401) {
+    clearSession();
+    onUnauthorized?.();
+    throw new ApiError("Sesión expirada o no autorizada", 401);
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -181,4 +190,4 @@ export const api = {
   },
 };
 
-export { ApiError };
+export { ApiError, getToken, setToken, clearSession };

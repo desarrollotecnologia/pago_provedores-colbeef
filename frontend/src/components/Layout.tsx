@@ -1,8 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../hooks/useRole";
-import { bindUsabilityShortcut } from "../telemetry/tracker";
 import { usePageTracking } from "../telemetry/usePageTracking";
 
 const ADMIN_NAV = [
@@ -10,7 +8,6 @@ const ADMIN_NAV = [
   { to: "/proveedores", label: "Proveedores", icon: "◎" },
   { to: "/pagos", label: "Pagos", icon: "◆" },
   { to: "/config", label: "Configuración", icon: "◇" },
-  { to: "/usabilidad", label: "Usabilidad", icon: "◉", discreet: true },
 ];
 
 export default function Layout() {
@@ -19,21 +16,18 @@ export default function Layout() {
   const navigate = useNavigate();
   usePageTracking();
 
-  useEffect(() => {
-    if (!isAdmin) return;
-    return bindUsabilityShortcut(() => navigate("/usabilidad"));
-  }, [isAdmin, navigate]);
-
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   return (
     <div className={`app-shell${isAdmin ? "" : " app-shell-operador"}`}>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-logo">CB</div>
+          <div className="sidebar-logo sidebar-logo-img">
+            <img src="/logo-pago.svg" alt="" width="36" height="36" />
+          </div>
           <div>
             <h1>Pago Proveedores</h1>
             <p>Colbeef · Tesorería</p>
@@ -41,30 +35,28 @@ export default function Layout() {
         </div>
 
         <div className="sidebar-role">
-          {isAdmin ? "Administrador — operaciones" : "Operador — guía de uso"}
+          {isAdmin ? "Administrador — operaciones" : "Supervisor — estadísticas de uso"}
         </div>
 
-        {isAdmin && (
+        {isAdmin ? (
           <nav className="sidebar-nav">
             {ADMIN_NAV.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
-                className={({ isActive }) =>
-                  `nav-link${isActive ? " active" : ""}${"discreet" in item && item.discreet ? " nav-link-discreet" : ""}`
-                }
+                className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
               </NavLink>
             ))}
           </nav>
-        )}
-
-        {!isAdmin && (
+        ) : (
           <div className="sidebar-operador-note">
-            <p>Consulte aquí cómo funciona el sistema. No tiene permisos para operar pagos.</p>
+            <p>
+              Monitoreo del uso del sistema por el administrador: frecuencia, módulos y acciones.
+            </p>
           </div>
         )}
 
@@ -78,7 +70,7 @@ export default function Layout() {
         <header className="topbar">
           <div className="topbar-title">
             <span className="topbar-label">
-              {isAdmin ? "Sistema de pagos" : "Guía de usabilidad"}
+              {isAdmin ? "Sistema de pagos" : "Telemetría de usabilidad"}
             </span>
             <strong>{config?.app_name ?? "Pago Proveedores"}</strong>
           </div>
@@ -87,12 +79,9 @@ export default function Layout() {
               <span className="user-avatar">{(user?.nombre_completo ?? "U")[0]}</span>
               <div>
                 <div className="user-name">{user?.nombre_completo ?? user?.username}</div>
-                <div className="user-role">{isAdmin ? "Administrador" : "Operador"}</div>
+                <div className="user-role">{isAdmin ? "Administrador" : "Supervisor"}</div>
               </div>
             </div>
-            <span className="telemetry-badge" title="Sesión activa — telemetría anónima de uso">
-              {user?.username}
-            </span>
             <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
               Cerrar sesión
             </button>

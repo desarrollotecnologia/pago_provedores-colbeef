@@ -84,7 +84,7 @@ export default function UsabilidadDashboard() {
     try {
       const stats = await api.usabilityStats(days);
       setData(stats);
-      track("admin_open", "usabilidad", `Consulta stats ${days} días`);
+      track("module_open", "estadisticas_admin", `Consulta stats ${days} días`);
     } catch {
       setError("No se pudieron cargar las estadísticas.");
     } finally {
@@ -155,10 +155,10 @@ export default function UsabilidadDashboard() {
     <>
       <div className="page-hero">
         <div>
-          <p className="hero-eyebrow">Telemetría · Solo administrador</p>
-          <h1 className="page-title">Usabilidad del sistema</h1>
+          <p className="hero-eyebrow">Supervisión de uso</p>
+          <h1 className="page-title">Uso del administrador</h1>
           <p className="page-subtitle hero-sub">
-            Adopción real, módulos visitados y acciones — sin interferir con operadores
+            Frecuencia, módulos visitados y acciones del usuario administrador en el sistema
           </p>
         </div>
         <div className="btn-group">
@@ -181,8 +181,8 @@ export default function UsabilidadDashboard() {
       {error && <div className="alert alert-error">{error}</div>}
       {sinDatos && (
         <div className="alert alert-info">
-          No hay eventos registrados en los últimos {days} días. Los datos aparecerán cuando los
-          usuarios naveguen la aplicación.
+          No hay actividad del administrador en los últimos {days} días. Los datos aparecerán
+          cuando el usuario admin opere el sistema (pagos, proveedores, etc.).
         </div>
       )}
 
