@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -48,8 +48,7 @@ if (static_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
 
 
-@app.get("/")
-def spa_index():
+def _spa_index():
     index = static_dir / "index.html"
     if index.exists():
         return FileResponse(index)
@@ -58,3 +57,18 @@ def spa_index():
         "docs": "/docs",
         "health": "/health",
     }
+
+
+@app.get("/")
+def spa_index():
+    return _spa_index()
+
+
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str):
+    """Rutas del SPA (React Router) — devuelve index.html."""
+    if full_path.startswith("api") or full_path in ("docs", "openapi.json", "health", "redoc"):
+        raise HTTPException(status_code=404)
+    if full_path.startswith("assets/"):
+        raise HTTPException(status_code=404)
+    return _spa_index()

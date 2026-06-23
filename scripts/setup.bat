@@ -36,6 +36,11 @@ echo [4/4] Ejecutando seed e importacion Excel...
 cd backend
 python -m app.seeds.run_seed %*
 
+echo.
+echo [5/5] Compilando frontend...
+cd /d "%ROOT%"
+call scripts\build_frontend.bat
+
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] La inicializacion fallo. Verifica que MySQL este corriendo

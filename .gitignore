@@ -1,11 +1,12 @@
 venv/
+frontend/node_modules/
 .env
 __pycache__/
 *.pyc
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
-dist/
+/dist/
 build/
 output/*.txt
 !output/.gitkeep
