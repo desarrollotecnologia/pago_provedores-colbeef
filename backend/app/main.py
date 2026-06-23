@@ -44,12 +44,17 @@ def health_check():
 
 # Frontend estático — misma URL que la API (sin configurar rutas al migrar)
 static_dir = settings.static_dir
-if static_dir.exists():
+if (static_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
 
-    @app.get("/")
-    def spa_index():
-        index = static_dir / "index.html"
-        if index.exists():
-            return FileResponse(index)
-        return {"message": "API activa. Coloque el frontend en frontend/dist"}
+
+@app.get("/")
+def spa_index():
+    index = static_dir / "index.html"
+    if index.exists():
+        return FileResponse(index)
+    return {
+        "message": "API activa. Frontend no encontrado en frontend/dist",
+        "docs": "/docs",
+        "health": "/health",
+    }
