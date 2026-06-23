@@ -171,7 +171,15 @@ export default function LoteDetail() {
         </div>
       </div>
 
-      {message && <div className="alert alert-success">{message}</div>}
+      {message && (
+        <div
+          className={`alert ${
+            /errores:\s*[1-9]/i.test(message) ? "alert-success-warn" : "alert-success"
+          }`}
+        >
+          {message}
+        </div>
+      )}
       {error && <div className="alert alert-error">{error}</div>}
 
       {editable && <InfoLote compact />}

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { ApiError } from "../api/client";
+import BrandLogoBox from "../components/BrandLogoBox";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -30,9 +31,7 @@ export default function Login() {
       <div className="login-bg-pattern" />
       <div className="login-container">
         <div className="login-brand">
-          <div className="login-logo-box">
-            <img src="/logo-pago.svg" alt="Pago Proveedores" className="login-logo-img" />
-          </div>
+          <BrandLogoBox />
           <div>
             <h1>Pago Proveedores</h1>
             <p>Colbeef · Sistema interno de tesorería</p>

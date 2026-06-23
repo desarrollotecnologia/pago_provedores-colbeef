@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import BrandLogoBox from "./BrandLogoBox";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../hooks/useRole";
 import { usePageTracking } from "../telemetry/usePageTracking";
@@ -25,9 +26,7 @@ export default function Layout() {
     <div className={`app-shell${isAdmin ? "" : " app-shell-operador"}`}>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-logo sidebar-logo-img">
-            <img src="/logo-pago.svg" alt="" width="36" height="36" />
-          </div>
+          <BrandLogoBox size="sm" />
           <div>
             <h1>Pago Proveedores</h1>
             <p>Colbeef · Tesorería</p>
