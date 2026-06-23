@@ -4,7 +4,6 @@ import Layout from "./components/Layout";
 import { useAuth } from "./context/AuthContext";
 import { useRole } from "./hooks/useRole";
 import AdminDashboard from "./pages/AdminDashboard";
-import Config from "./pages/Config";
 import Login from "./pages/Login";
 import LoteDetail from "./pages/LoteDetail";
 import Pagos from "./pages/Pagos";
@@ -65,14 +64,7 @@ export default function App() {
             </AdminRoute>
           }
         />
-        <Route
-          path="config"
-          element={
-            <AdminRoute>
-              <Config />
-            </AdminRoute>
-          }
-        />
+        <Route path="config" element={<Navigate to="/" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

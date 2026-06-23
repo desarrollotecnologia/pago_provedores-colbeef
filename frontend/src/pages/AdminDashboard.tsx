@@ -2,15 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
-import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
-import type { DashboardResponse, SmtpStatus } from "../types";
+import type { DashboardResponse } from "../types";
 import { formatMoney } from "../utils/format";
 
 export default function AdminDashboard() {
-  const { config } = useAuth();
   const [data, setData] = useState<DashboardResponse | null>(null);
-  const [smtp, setSmtp] = useState<SmtpStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,9 +19,8 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      const [dash, smtpStatus] = await Promise.all([api.dashboard(), api.smtpStatus()]);
+      const dash = await api.dashboard();
       setData(dash);
-      setSmtp(smtpStatus);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "No se pudo cargar el dashboard administrativo.";
       setError(msg);
@@ -47,7 +43,7 @@ export default function AdminDashboard() {
         <div>
           <p className="hero-eyebrow">Administración</p>
           <h1 className="page-title">Dashboard ejecutivo</h1>
-          <p className="page-subtitle hero-sub">Métricas, estado del sistema y actividad reciente</p>
+          <p className="page-subtitle hero-sub">Métricas y actividad reciente</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={load}>
           Actualizar
@@ -73,24 +69,6 @@ export default function AdminDashboard() {
           <div className="label">Movimientos</div>
           <div className="value">{r?.cantidad_pagos ?? 0}</div>
         </div>
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <h2>Estado del sistema</h2>
-          <a href="/docs" target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-            Documentación API
-          </a>
-        </div>
-        <div className="system-status">
-          <span className="status-dot ok" />
-          API operativa — {config?.env} — {config?.app_url}
-        </div>
-        {smtp && !smtp.configured && (
-          <div className="alert alert-warn" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
-            SMTP pendiente: configure SMTP_HOST y SMTP_PASSWORD en .env del servidor.
-          </div>
-        )}
       </div>
 
       <div className="two-cols">

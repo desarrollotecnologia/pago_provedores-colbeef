@@ -8,7 +8,6 @@ const ADMIN_NAV = [
   { to: "/", label: "Dashboard", icon: "◈" },
   { to: "/proveedores", label: "Proveedores", icon: "◎" },
   { to: "/pagos", label: "Pagos", icon: "◆" },
-  { to: "/config", label: "Configuración", icon: "◇" },
 ];
 
 export default function Layout() {
