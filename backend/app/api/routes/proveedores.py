@@ -28,7 +28,7 @@ def listar_proveedores(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     items, total = svc.list_proveedores(
         db,
@@ -53,7 +53,7 @@ def listar_proveedores(
 def obtener_proveedor(
     proveedor_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.get_proveedor(db, proveedor_id)
 
@@ -62,7 +62,7 @@ def obtener_proveedor(
 def crear_proveedor(
     payload: ProveedorCreate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.create_proveedor(db, payload)
 
@@ -72,7 +72,7 @@ def actualizar_proveedor(
     proveedor_id: int,
     payload: ProveedorUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.update_proveedor(db, proveedor_id, payload)
 

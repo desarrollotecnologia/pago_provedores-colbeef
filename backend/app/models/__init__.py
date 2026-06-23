@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Numeric,
     SmallInteger,
     String,
@@ -236,3 +237,26 @@ class Configuracion(Base):
     clave: Mapped[str] = mapped_column(String(100), primary_key=True)
     valor: Mapped[str] = mapped_column(Text, nullable=False)
     descripcion: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class EventoUsabilidad(Base):
+    __tablename__ = "eventos_usabilidad"
+    __table_args__ = (
+        Index("idx_usabilidad_timestamp", "timestamp"),
+        Index("idx_usabilidad_usuario", "usuario"),
+        Index("idx_usabilidad_action", "action"),
+        Index("idx_usabilidad_module", "module"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    usuario: Mapped[str] = mapped_column(String(80), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[str] = mapped_column(String(40), nullable=False)
+    module: Mapped[str] = mapped_column(String(60), nullable=False)
+    detail: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    page: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )

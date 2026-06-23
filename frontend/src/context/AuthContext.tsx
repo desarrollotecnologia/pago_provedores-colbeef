@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api } from "../api/client";
+import { trackSessionStart } from "../telemetry/tracker";
 import type { PublicConfig, UsuarioAuth } from "../types";
 
 interface AuthState {
@@ -34,7 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     api
       .me()
-      .then((u) => setUser(u))
+      .then((u) => {
+        setUser(u);
+        trackSessionStart(u.rol);
+      })
       .catch(() => localStorage.removeItem("token"))
       .finally(() => setLoading(false));
   }, []);
@@ -43,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await api.login(usuario, password);
     localStorage.setItem("token", res.access_token);
     setUser(res.usuario);
+    trackSessionStart(res.usuario.rol);
   }, []);
 
   const logout = useCallback(() => {

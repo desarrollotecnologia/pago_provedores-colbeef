@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import auth, catalogos, lotes, proveedores, sistema
+from app.api.routes import auth, catalogos, lotes, proveedores, sistema, usability
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -30,6 +30,7 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(proveedores.router, prefix=API_PREFIX)
 app.include_router(catalogos.router, prefix=API_PREFIX)
 app.include_router(lotes.router, prefix=API_PREFIX)
+app.include_router(usability.router, prefix=API_PREFIX)
 
 
 @app.get("/health")

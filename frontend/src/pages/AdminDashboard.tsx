@@ -3,21 +3,30 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
+import { track } from "../telemetry/tracker";
 import type { DashboardResponse, SmtpStatus } from "../types";
 import { formatMoney } from "../utils/format";
 
-export default function Dashboard() {
+export default function AdminDashboard() {
   const { config } = useAuth();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [smtp, setSmtp] = useState<SmtpStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    track("module_open", "dashboard_admin", "Dashboard ejecutivo");
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const [dash, smtpStatus] = await Promise.all([api.dashboard(), api.smtpStatus()]);
       setData(dash);
       setSmtp(smtpStatus);
+    } catch {
+      setError("No se pudo cargar el dashboard administrativo.");
     } finally {
       setLoading(false);
     }
@@ -33,24 +42,34 @@ export default function Dashboard() {
 
   return (
     <>
-      <h1 className="page-title">Dashboard</h1>
-      <p className="page-subtitle">Resumen del período y actividad reciente</p>
+      <div className="page-hero">
+        <div>
+          <p className="hero-eyebrow">Administración</p>
+          <h1 className="page-title">Dashboard ejecutivo</h1>
+          <p className="page-subtitle hero-sub">Métricas, estado del sistema y actividad reciente</p>
+        </div>
+        <button type="button" className="btn btn-secondary" onClick={load}>
+          Actualizar
+        </button>
+      </div>
+
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="cards-grid">
-        <div className="stat-card">
+        <div className="stat-card stat-card-accent">
           <div className="label">Total pagado</div>
           <div className="value">{formatMoney(r?.importe_total ?? 0)}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Proveedores</div>
+          <div className="label">Proveedores activos</div>
           <div className="value">{r?.cantidad_proveedores ?? 0}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Lotes</div>
+          <div className="label">Lotes del período</div>
           <div className="value">{r?.cantidad_lotes ?? 0}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Pagos</div>
+          <div className="label">Movimientos</div>
           <div className="value">{r?.cantidad_pagos ?? 0}</div>
         </div>
       </div>
@@ -58,21 +77,17 @@ export default function Dashboard() {
       <div className="card">
         <div className="card-header">
           <h2>Estado del sistema</h2>
-          <div className="btn-group">
-            <a href="/docs" target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
-              Abrir API
-            </a>
-            <button type="button" className="btn btn-primary btn-sm" onClick={load}>
-              Actualizar
-            </button>
-          </div>
+          <a href="/docs" target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+            Documentación API
+          </a>
         </div>
-        <p style={{ fontSize: "0.9rem", color: "var(--muted)" }}>
-          API ok — {config?.env} — {config?.app_url}
-        </p>
+        <div className="system-status">
+          <span className="status-dot ok" />
+          API operativa — {config?.env} — {config?.app_url}
+        </div>
         {smtp && !smtp.configured && (
           <div className="alert alert-warn" style={{ marginTop: "0.75rem", marginBottom: 0 }}>
-            SMTP pendiente: configura SMTP_HOST y SMTP_PASSWORD en .env para enviar correos reales.
+            SMTP pendiente: configure SMTP_HOST y SMTP_PASSWORD en .env del servidor.
           </div>
         )}
       </div>
@@ -107,7 +122,7 @@ export default function Dashboard() {
               </table>
             </div>
           ) : (
-            <p className="empty-state">Sin pagos registrados en el período.</p>
+            <p className="empty-state">Sin pagos en el período.</p>
           )}
         </div>
 
@@ -146,7 +161,7 @@ export default function Dashboard() {
               </table>
             </div>
           ) : (
-            <p className="empty-state">No hay lotes creados todavía.</p>
+            <p className="empty-state">No hay lotes creados.</p>
           )}
         </div>
       </div>

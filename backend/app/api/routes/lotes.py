@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import require_admin
 from app.core.database import get_db
 from app.models import Usuario
 from app.schemas.common import MessageResponse
@@ -59,7 +59,7 @@ def listar_lotes(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     items, total = svc.list_lotes(
         db,
@@ -82,7 +82,7 @@ def listar_lotes(
 def crear_lote(
     payload: LoteCreate,
     db: Session = Depends(get_db),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_admin),
 ):
     return svc.crear_lote(db, payload, user.id)
 
@@ -91,7 +91,7 @@ def crear_lote(
 def obtener_lote(
     lote_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.get_lote(db, lote_id)
 
@@ -101,7 +101,7 @@ def actualizar_lote(
     lote_id: int,
     payload: LoteUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.actualizar_lote(db, lote_id, payload)
 
@@ -110,7 +110,7 @@ def actualizar_lote(
 def confirmar_lote(
     lote_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.confirmar_lote(db, lote_id)
 
@@ -120,7 +120,7 @@ def agregar_pago(
     lote_id: int,
     payload: PagoItemCreate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.agregar_pago(db, lote_id, payload)
 
@@ -130,7 +130,7 @@ def actualizar_pago(
     pago_id: int,
     payload: PagoItemUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return svc.actualizar_pago(db, pago_id, payload)
 
@@ -139,7 +139,7 @@ def actualizar_pago(
 def eliminar_pago(
     pago_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     svc.eliminar_pago(db, pago_id)
     return MessageResponse(message="Pago eliminado del lote")
@@ -149,7 +149,7 @@ def eliminar_pago(
 def generar_archivo(
     lote_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return _generar_archivo_interno(db, lote_id)
 
@@ -158,7 +158,7 @@ def generar_archivo(
 def descargar_archivo(
     lote_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     lote = svc.get_lote(db, lote_id)
     if not lote.archivo_plano_ruta:
@@ -174,7 +174,7 @@ def descargar_archivo(
 def enviar_correos(
     lote_id: int,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     lote = svc.get_lote(db, lote_id)
     if lote.estado not in ("archivo_generado", "correos_enviados", "completado", "confirmado"):
@@ -203,7 +203,7 @@ def procesar_lote_completo(
     lote_id: int,
     enviar_correos: bool = Query(True),
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     gen = _generar_archivo_interno(db, lote_id)
     if not enviar_correos:

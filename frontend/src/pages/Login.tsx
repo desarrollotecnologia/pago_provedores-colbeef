@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const { user, loading, login } = useAuth();
-  const [usuario, setUsuario] = useState("viviana");
+  const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -17,9 +17,9 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      await login(usuario, password);
+      await login(usuario.trim(), password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Error al iniciar sesión");
+      setError(err instanceof ApiError ? err.message : "Credenciales incorrectas");
     } finally {
       setSubmitting(false);
     }
@@ -27,48 +27,57 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-brand">
-        <div className="sidebar-logo">CB</div>
-        <div>
-          <h1>Pago Proveedores</h1>
-          <p>Colbeef — pagos, lotes y archivo plano bancario</p>
+      <div className="login-bg-pattern" />
+      <div className="login-container">
+        <div className="login-brand">
+          <div className="sidebar-logo login-logo">CB</div>
+          <div>
+            <h1>Pago Proveedores</h1>
+            <p>Colbeef · Sistema interno de tesorería</p>
+          </div>
         </div>
-      </div>
 
-      <div className="login-card">
-        <h2>Iniciar sesión</h2>
-        <p className="hint">Usa las credenciales del sistema.</p>
-
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="usuario">Usuario</label>
-            <input
-              id="usuario"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              autoComplete="username"
-              required
-            />
+        <div className="login-card">
+          <div className="login-card-header">
+            <h2>Acceso seguro</h2>
+            <p>Ingrese sus credenciales corporativas</p>
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: "100%" }}>
-            {submitting ? "Entrando…" : "Entrar"}
-          </button>
-        </form>
 
-        <p className="login-footer">También disponible: panel / 123456789</p>
+          {error && <div className="alert alert-error">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="usuario">Usuario</label>
+              <input
+                id="usuario"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoComplete="username"
+                placeholder="Su usuario asignado"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+              {submitting ? "Verificando…" : "Iniciar sesión"}
+            </button>
+          </form>
+
+          <p className="login-security-note">
+            Acceso restringido. Las acciones quedan registradas por usuario y rol.
+          </p>
+        </div>
       </div>
     </div>
   );

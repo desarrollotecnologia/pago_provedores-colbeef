@@ -206,8 +206,17 @@ export default function Proveedores() {
 
   return (
     <>
-      <h1 className="page-title">Proveedores</h1>
-      <p className="page-subtitle">{total} proveedor(es) registrado(s)</p>
+      <div className="page-hero">
+        <div>
+          <h1 className="page-title">Proveedores</h1>
+          <p className="page-subtitle hero-sub">
+            {total} proveedor(es) — catálogo importado desde Excel
+          </p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
+          + Nuevo proveedor
+        </button>
+      </div>
 
       {message && <div className="alert alert-success">{message}</div>}
 
@@ -223,9 +232,6 @@ export default function Proveedores() {
               Buscar
             </button>
           </form>
-          <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
-            + Nuevo
-          </button>
         </div>
 
         {loading ? (
@@ -256,15 +262,13 @@ export default function Proveedores() {
                       <td>{p.numero_cuenta}</td>
                       <td>{p.email ?? "—"}</td>
                       <td>
-                        <div className="btn-group">
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => setEditing(p)}
-                          >
-                            Editar
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => setEditing(p)}
+                        >
+                          Editar
+                        </button>
                       </td>
                     </tr>
                   ))}

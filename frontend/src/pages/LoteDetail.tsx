@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
+import { trackAction } from "../telemetry/tracker";
+import InfoLote from "../components/InfoLote";
 import StatusBadge from "../components/StatusBadge";
 import type { Lote, Proveedor } from "../types";
 import { formatMoney } from "../utils/format";
@@ -87,6 +89,9 @@ export default function LoteDetail() {
       else res = await api.procesarLote(loteId, false);
       setMessage(res.mensaje);
       load();
+      if (action === "archivo") trackAction("pagos", `Archivo generado lote #${loteId}`);
+      else if (action === "correos") trackAction("pagos", `Correos enviados lote #${loteId}`);
+      else if (action === "procesar") trackAction("pagos", `Procesar todo lote #${loteId}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error en la operación");
     } finally {
@@ -167,6 +172,8 @@ export default function LoteDetail() {
 
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-error">{error}</div>}
+
+      {editable && <InfoLote compact />}
 
       <div className="cards-grid">
         <div className="stat-card">

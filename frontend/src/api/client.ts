@@ -11,6 +11,7 @@ import type {
   PublicConfig,
   SmtpStatus,
   TokenResponse,
+  UsabilityStats,
   UsuarioAuth,
 } from "../types";
 
@@ -173,6 +174,10 @@ export const api = {
 
   descargarArchivoUrl(loteId: number) {
     return `${API}/lotes/${loteId}/descargar-archivo`;
+  },
+
+  usabilityStats(days = 30) {
+    return request<UsabilityStats>(`/usability/stats?days=${days}`);
   },
 };
 

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import CuentaOrdenante, Usuario
@@ -34,7 +34,7 @@ def dashboard(
     fecha_hasta: date | None = Query(None),
     top_dias: int = Query(90, ge=7, le=365),
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     return dashboard_service.obtener_dashboard(
         db, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, top_dias=top_dias
@@ -42,7 +42,7 @@ def dashboard(
 
 
 @router.get("/config/smtp-status")
-def smtp_status(_: Usuario = Depends(get_current_user)):
+def smtp_status(_: Usuario = Depends(require_admin)):
     s = get_settings()
     return {
         "configured": bool(s.smtp_host and s.smtp_password),
@@ -54,7 +54,7 @@ def smtp_status(_: Usuario = Depends(get_current_user)):
 @router.get("/cuentas-ordenantes")
 def cuentas_ordenantes(
     db: Session = Depends(get_db),
-    _: Usuario = Depends(get_current_user),
+    _: Usuario = Depends(require_admin),
 ):
     rows = db.scalars(
         select(CuentaOrdenante).where(CuentaOrdenante.activa.is_(True))

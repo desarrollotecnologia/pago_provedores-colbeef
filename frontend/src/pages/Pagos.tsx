@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, api } from "../api/client";
+import { trackAction } from "../telemetry/tracker";
+import InfoLote from "../components/InfoLote";
 import StatusBadge from "../components/StatusBadge";
 import type { CuentaOrdenante, LoteListItem } from "../types";
 import { formatMoney, todayISO } from "../utils/format";
@@ -55,6 +57,7 @@ export default function Pagos() {
       });
       setShowNew(false);
       navigate(`/pagos/${lote.id}`);
+      trackAction("pagos", `Lote creado #${lote.id}`, { lote_id: lote.id });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al crear lote");
     }
@@ -62,15 +65,23 @@ export default function Pagos() {
 
   return (
     <>
-      <h1 className="page-title">Pagos</h1>
-      <p className="page-subtitle">Lotes de pago — archivo plano y correos</p>
+      <div className="page-hero">
+        <div>
+          <h1 className="page-title">Pagos del viernes</h1>
+          <p className="page-subtitle hero-sub">
+            Cree y procese lotes de pago — archivo bancario y correos
+          </p>
+        </div>
+        <button type="button" className="btn btn-primary btn-lg" onClick={() => setShowNew(true)}>
+          + Nuevo lote
+        </button>
+      </div>
+
+      <InfoLote />
 
       <div className="card">
         <div className="card-header">
-          <h2>Lotes de pago</h2>
-          <button type="button" className="btn btn-primary" onClick={() => setShowNew(true)}>
-            + Nuevo lote
-          </button>
+          <h2>Historial de lotes</h2>
         </div>
 
         {loading ? (

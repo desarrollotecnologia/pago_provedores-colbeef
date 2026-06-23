@@ -147,6 +147,35 @@ export interface ProcesarLoteResponse {
   mensaje: string;
 }
 
+export interface UsabilityStats {
+  periodo_dias: number;
+  desde: string;
+  kpis: {
+    total_eventos: number;
+    usuarios_unicos: number;
+    sesiones_unicas: number;
+    ultima_actividad: {
+      usuario: string | null;
+      action: string | null;
+      module: string | null;
+      detail: string | null;
+      timestamp: string | null;
+    };
+  };
+  eventos_por_dia: { dia: string; total: number }[];
+  top_usuarios: { usuario: string; total: number }[];
+  por_modulo: { module: string; total: number }[];
+  por_accion: { action: string; total: number }[];
+  recientes: {
+    timestamp: string;
+    usuario: string;
+    action: string;
+    module: string;
+    detail: string | null;
+    page: string | null;
+  }[];
+}
+
 export interface SmtpStatus {
   configured: boolean;
   host: string | null;
