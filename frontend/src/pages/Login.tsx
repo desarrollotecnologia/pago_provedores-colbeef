@@ -55,10 +55,10 @@ export default function Login() {
               <p>Ingrese sus credenciales corporativas</p>
             </div>
 
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && <div className="alert alert-error login-error-shake">{error}</div>}
 
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
+              <div className="form-group login-field-anim" style={{ animationDelay: "0.35s" }}>
                 <label htmlFor="usuario">Usuario</label>
                 <input
                   id="usuario"
@@ -69,7 +69,7 @@ export default function Login() {
                   required
                 />
               </div>
-              <div className="form-group">
+              <div className="form-group login-field-anim" style={{ animationDelay: "0.42s" }}>
                 <label htmlFor="password">Contraseña</label>
                 <input
                   id="password"
@@ -81,7 +81,12 @@ export default function Login() {
                   required
                 />
               </div>
-              <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={submitting}>
+              <button
+                type="submit"
+                className={`btn btn-primary btn-block btn-lg login-field-anim${submitting ? " btn-loading" : ""}`}
+                style={{ animationDelay: "0.5s" }}
+                disabled={submitting}
+              >
                 {submitting ? "Verificando…" : "Iniciar sesión"}
               </button>
             </form>

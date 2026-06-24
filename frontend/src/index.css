@@ -721,6 +721,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
     radial-gradient(ellipse 50% 40% at 85% 80%, rgba(12, 61, 38, 0.1), transparent),
     linear-gradient(160deg, #e8f2ec 0%, var(--bg) 45%, #e2ebe6 100%);
   z-index: 0;
+  animation: loginBgPulse 10s ease-in-out infinite;
 }
 
 .login-bg-pattern::after {
@@ -730,6 +731,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   background-image: radial-gradient(rgba(12, 61, 38, 0.04) 1px, transparent 1px);
   background-size: 24px 24px;
   opacity: 0.6;
+  animation: loginDotsDrift 24s linear infinite;
 }
 
 .login-split {
@@ -744,6 +746,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
+  animation: loginScaleIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .login-panel-brand {
@@ -755,6 +758,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   justify-content: center;
   position: relative;
   overflow: hidden;
+  animation: loginSlideLeft 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
 }
 
 .login-panel-brand::before {
@@ -766,12 +770,14 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   height: 80%;
   background: radial-gradient(circle, rgba(74, 222, 128, 0.15), transparent 65%);
   pointer-events: none;
+  animation: loginGlowPulse 7s ease-in-out infinite;
 }
 
 .login-panel-brand .brand-logo-box {
   border-color: rgba(255, 255, 255, 0.25);
   margin-bottom: 1.5rem;
   position: relative;
+  animation: logoFloat 3.5s ease-in-out infinite;
 }
 
 .login-panel-brand h1 {
@@ -780,6 +786,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   letter-spacing: -0.03em;
   line-height: 1.15;
   position: relative;
+  animation: loginFadeUp 0.6s ease 0.2s both;
 }
 
 .login-panel-brand > p {
@@ -787,6 +794,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   opacity: 0.8;
   margin-top: 0.5rem;
   position: relative;
+  animation: loginFadeUp 0.6s ease 0.3s both;
 }
 
 .login-features {
@@ -805,7 +813,12 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   font-size: 0.88rem;
   opacity: 0.9;
   line-height: 1.4;
+  animation: loginFadeUp 0.5s ease both;
 }
+
+.login-features li:nth-child(1) { animation-delay: 0.45s; }
+.login-features li:nth-child(2) { animation-delay: 0.55s; }
+.login-features li:nth-child(3) { animation-delay: 0.65s; }
 
 .login-features li::before {
   content: "✓";
@@ -825,6 +838,7 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   display: flex;
   flex-direction: column;
   justify-content: center;
+  animation: loginSlideRight 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
 }
 
 .login-container { position: relative; z-index: 1; width: 100%; max-width: 420px; }
@@ -847,6 +861,15 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   place-items: center;
   box-shadow: var(--shadow);
   flex-shrink: 0;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.brand-logo-box svg,
+.login-logo-box svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .sidebar .brand-logo-box {
@@ -882,11 +905,33 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   border: none;
 }
 
-.login-card-header { margin-bottom: 1.75rem; }
+.login-card-header { margin-bottom: 1.75rem; animation: loginFadeUp 0.55s ease 0.25s both; }
 .login-card-header h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--green-950); }
 .login-card-header p { font-size: 0.9rem; color: var(--muted); }
 
 .login-card form { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.login-field-anim {
+  animation: loginFadeUp 0.5s ease both;
+}
+
+.login-card form .form-group input:focus {
+  transform: translateY(-1px);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.login-card .btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(26, 107, 66, 0.35);
+}
+
+.login-card .btn-primary {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.login-error-shake {
+  animation: loginShake 0.45s ease;
+}
 
 .login-security-note {
   margin-top: 1.25rem;
@@ -894,6 +939,81 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
   color: var(--muted);
   text-align: center;
   line-height: 1.5;
+  animation: loginFadeUp 0.5s ease 0.58s both;
+}
+
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: -0.575rem 0 0 -0.575rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+@keyframes loginFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loginSlideLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes loginSlideRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes loginScaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes loginBgPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.04); }
+}
+
+@keyframes loginDotsDrift {
+  from { background-position: 0 0; }
+  to { background-position: 24px 24px; }
+}
+
+@keyframes loginGlowPulse {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  50% { transform: translate(-4%, 4%) scale(1.06); opacity: 0.75; }
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes loginShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page *,
+  .login-page *::before,
+  .login-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ── Modal ── */
