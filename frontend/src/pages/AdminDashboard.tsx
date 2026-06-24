@@ -129,7 +129,7 @@ export default function AdminDashboard() {
                       <td>
                         <Link to={`/pagos/${l.id}`}>#{l.id}</Link>
                       </td>
-                      <td>{l.concepto_general}</td>
+                      <td>{l.concepto_general ?? l.concepto ?? "Sin concepto"}</td>
                       <td>
                         <StatusBadge estado={l.estado} />
                       </td>

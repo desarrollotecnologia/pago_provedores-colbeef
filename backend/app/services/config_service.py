@@ -15,12 +15,13 @@ def get_smtp_config(db: Session) -> dict:
     settings = get_settings()
     return {
         "host": settings.smtp_host or _get_db_config(db, "smtp_host") or "",
-        "port": int(_get_db_config(db, "smtp_port") or settings.smtp_port),
+        "port": settings.smtp_port or int(_get_db_config(db, "smtp_port") or 587),
         "user": settings.smtp_user or _get_db_config(db, "smtp_user") or "",
         "password": settings.smtp_password or _get_db_config(db, "smtp_password") or "",
         "from_email": settings.smtp_from_email or _get_db_config(db, "smtp_user") or "",
         "from_name": settings.smtp_from_name or _get_db_config(db, "smtp_from_name") or "",
         "use_tls": settings.smtp_use_tls,
+        "use_ssl": settings.smtp_use_ssl,
     }
 
 

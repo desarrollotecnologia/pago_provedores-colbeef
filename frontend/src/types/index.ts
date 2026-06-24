@@ -130,6 +130,7 @@ export interface DashboardResponse {
   ultimos_lotes: {
     id: number;
     fecha_operacion: string;
+    concepto?: string;
     concepto_general: string;
     estado: string;
     importe_total: string;

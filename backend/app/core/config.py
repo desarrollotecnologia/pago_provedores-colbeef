@@ -82,6 +82,7 @@ class Settings:
         self.smtp_from_email = _env("SMTP_FROM_EMAIL", self.smtp_user)
         self.smtp_from_name = _env("SMTP_FROM_NAME", "Coordinación Tesorería")
         self.smtp_use_tls = _env_bool("SMTP_USE_TLS", True)
+        self.smtp_use_ssl = _env_bool("SMTP_USE_SSL", self.smtp_port == 465)
 
         # MySQL scripts Windows (opcional)
         self.mysql_bin = _env(

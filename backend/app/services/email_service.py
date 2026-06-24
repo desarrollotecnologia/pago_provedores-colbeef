@@ -80,8 +80,9 @@ def enviar_correo_pago(db: Session, pago: Pago, smtp: dict | None = None) -> Env
     msg.attach(MIMEText(_cuerpo_correo(pago, banco_txt), "plain", "utf-8"))
 
     try:
-        with smtplib.SMTP(smtp_cfg["host"], smtp_cfg["port"], timeout=30) as server:
-            if smtp_cfg.get("use_tls"):
+        smtp_class = smtplib.SMTP_SSL if smtp_cfg.get("use_ssl") else smtplib.SMTP
+        with smtp_class(smtp_cfg["host"], smtp_cfg["port"], timeout=30) as server:
+            if smtp_cfg.get("use_tls") and not smtp_cfg.get("use_ssl"):
                 server.starttls()
             if smtp_cfg.get("user"):
                 server.login(smtp_cfg["user"], smtp_cfg["password"])
