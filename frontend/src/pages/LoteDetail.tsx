@@ -2,12 +2,26 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
 import { getToken } from "../auth/session";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { trackAction } from "../telemetry/tracker";
 import InfoLote from "../components/InfoLote";
 import ProveedorSearch from "../components/ProveedorSearch";
 import StatusBadge from "../components/StatusBadge";
 import type { Lote, Proveedor } from "../types";
 import { formatMoney } from "../utils/format";
+
+type LoteAction = "archivo" | "correos" | "procesar" | "procesar-sin-correos";
+
+interface ConfirmState {
+  title: string;
+  message: string;
+  detail?: string;
+  confirmLabel: string;
+  variant: "primary" | "danger";
+  icon: "mail" | "warning" | "trash";
+  action: LoteAction | "delete-pago";
+  pagoId?: number;
+}
 
 export default function LoteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +39,10 @@ export default function LoteDetail() {
     concepto1: "",
     email_destino: "",
   });
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [infoDialog, setInfoDialog] = useState<{ title: string; message: string } | null>(
+    null
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,37 +100,21 @@ export default function LoteDetail() {
     }
   };
 
-  const handleDeletePago = async (pagoId: number) => {
-    if (!confirm("¿Eliminar este pago del lote?")) return;
-    await api.eliminarPago(pagoId);
-    load();
-    setMessage("Pago eliminado");
+  const handleDeletePago = (pagoId: number) => {
+    setConfirmState({
+      title: "Eliminar pago",
+      message: "¿Desea quitar este pago del lote?",
+      detail: "Esta acción no se puede deshacer.",
+      confirmLabel: "Eliminar",
+      variant: "danger",
+      icon: "trash",
+      action: "delete-pago",
+      pagoId,
+    });
   };
 
-  const runAction = async (action: "archivo" | "correos" | "procesar" | "procesar-sin-correos") => {
+  const executeAction = async (action: LoteAction) => {
     if (!lote) return;
-
-    const yaEnviados = lote.estado === "correos_enviados";
-    const pendientes = lote.pagos.filter(
-      (p) => p.estado !== "anulado" && p.estado !== "correo_enviado"
-    ).length;
-
-    if (action === "correos" || action === "procesar") {
-      if (yaEnviados) {
-        alert("Los correos de este lote ya fueron enviados. No se permiten reenvíos.");
-        return;
-      }
-      if (pendientes === 0) {
-        alert("No hay correos pendientes por enviar en este lote.");
-        return;
-      }
-      const texto =
-        action === "procesar"
-          ? `¿Está seguro de generar el archivo y enviar ${pendientes} correo(s) a los proveedores?\n\nSolo se permite un envío por lote.`
-          : `¿Está seguro de enviar ${pendientes} correo(s) de soporte de pago?\n\nSolo se permite un envío por lote. No podrá reenviarlos.`;
-      if (!confirm(texto)) return;
-    }
-
     setProcessing(true);
     setError("");
     setMessage("");
@@ -132,6 +134,67 @@ export default function LoteDetail() {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleConfirm = async () => {
+    if (!confirmState) return;
+    const { action, pagoId } = confirmState;
+    setConfirmState(null);
+
+    if (action === "delete-pago" && pagoId != null) {
+      try {
+        await api.eliminarPago(pagoId);
+        load();
+        setMessage("Pago eliminado");
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Error al eliminar pago");
+      }
+      return;
+    }
+
+    await executeAction(action as LoteAction);
+  };
+
+  const runAction = (action: LoteAction) => {
+    if (!lote) return;
+
+    const yaEnviados = lote.estado === "correos_enviados";
+    const pendientes = lote.pagos.filter(
+      (p) => p.estado !== "anulado" && p.estado !== "correo_enviado"
+    ).length;
+
+    if (action === "correos" || action === "procesar") {
+      if (yaEnviados) {
+        setInfoDialog({
+          title: "Correos ya enviados",
+          message: "Los correos de este lote ya fueron enviados. No se permiten reenvíos.",
+        });
+        return;
+      }
+      if (pendientes === 0) {
+        setInfoDialog({
+          title: "Sin correos pendientes",
+          message: "No hay correos pendientes por enviar en este lote.",
+        });
+        return;
+      }
+
+      const esProcesar = action === "procesar";
+      setConfirmState({
+        title: esProcesar ? "Procesar lote completo" : "Enviar correos",
+        message: esProcesar
+          ? `Se generará el archivo plano y se enviarán ${pendientes} correo(s) a los proveedores.`
+          : `Se enviarán ${pendientes} correo(s) de soporte de pago a los proveedores.`,
+        detail: "Solo se permite un envío por lote. Esta acción no se puede deshacer.",
+        confirmLabel: esProcesar ? "Procesar todo" : "Enviar correos",
+        variant: "primary",
+        icon: "mail",
+        action,
+      });
+      return;
+    }
+
+    void executeAction(action);
   };
 
   const downloadArchivo = () => {
@@ -365,6 +428,31 @@ export default function LoteDetail() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmState !== null}
+        title={confirmState?.title ?? ""}
+        message={confirmState?.message ?? ""}
+        detail={confirmState?.detail}
+        confirmLabel={confirmState?.confirmLabel}
+        variant={confirmState?.variant}
+        icon={confirmState?.icon}
+        loading={processing}
+        onConfirm={() => void handleConfirm()}
+        onCancel={() => !processing && setConfirmState(null)}
+      />
+
+      <ConfirmDialog
+        open={infoDialog !== null}
+        title={infoDialog?.title ?? ""}
+        message={infoDialog?.message ?? ""}
+        confirmLabel="Entendido"
+        variant="default"
+        icon="info"
+        hideCancel
+        onConfirm={() => setInfoDialog(null)}
+        onCancel={() => setInfoDialog(null)}
+      />
     </>
   );
 }

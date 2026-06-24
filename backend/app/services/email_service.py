@@ -4,9 +4,12 @@ from __future__ import annotations
 import smtplib
 from datetime import UTC, datetime
 from decimal import Decimal, ROUND_HALF_UP
+from email import policy
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+SMTP_POLICY = policy.SMTP
 
 from sqlalchemy.orm import Session
 
@@ -53,26 +56,25 @@ def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[s
 
 
 def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_plano: str, html: str):
-    """Mensaje multipart: alternative (plain+html) y banner inline según RFC 2387."""
+    """Multipart/alternative (plain + html) con banner inline si existe."""
     banner_path = get_banner_path()
     use_cid = banner_path and not get_settings().email_firma_banner_url
 
-    plain = MIMEText(texto_plano, "plain", "utf-8")
-    html_part = MIMEText(html, "html", "utf-8")
+    plain = MIMEText(texto_plano, "plain", "utf-8", policy=SMTP_POLICY)
+    html_part = MIMEText(html, "html", "utf-8", policy=SMTP_POLICY)
 
     if use_cid and banner_path:
-        msg = MIMEMultipart("related")
-        alt = MIMEMultipart("alternative")
+        msg = MIMEMultipart("related", policy=SMTP_POLICY)
+        alt = MIMEMultipart("alternative", policy=SMTP_POLICY)
         alt.attach(plain)
         alt.attach(html_part)
         msg.attach(alt)
-        img_data = banner_path.read_bytes()
-        img = MIMEImage(img_data, _subtype="png")
+        img = MIMEImage(banner_path.read_bytes(), _subtype="png", policy=SMTP_POLICY)
         img.add_header("Content-ID", f"<{BANNER_CID}>")
         img.add_header("Content-Disposition", "inline", filename="email-banner-colbeef.png")
         msg.attach(img)
     else:
-        msg = MIMEMultipart("alternative")
+        msg = MIMEMultipart("alternative", policy=SMTP_POLICY)
         msg.attach(plain)
         msg.attach(html_part)
 
@@ -80,6 +82,7 @@ def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_pla
     msg["To"] = destinatario
     msg["Subject"] = asunto
     msg["MIME-Version"] = "1.0"
+    msg["X-Mailer"] = "PagoProveedores-Colbeef"
 
     return msg
 
