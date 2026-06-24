@@ -177,14 +177,20 @@ def enviar_correos(
     _: Usuario = Depends(require_admin),
 ):
     lote = svc.get_lote(db, lote_id)
-    if lote.estado not in ("archivo_generado", "correos_enviados", "completado", "confirmado"):
+    if lote.estado not in ("archivo_generado", "completado", "confirmado"):
+        if lote.estado == "correos_enviados":
+            raise HTTPException(
+                status_code=400,
+                detail="Los correos de este lote ya fueron enviados. No se permiten reenvíos.",
+            )
         raise HTTPException(
             status_code=400,
             detail="Primero genere el archivo plano antes de enviar correos",
         )
-    enviados, errores = enviar_correos_lote(db, lote)
-    if enviados:
-        lote.estado = "correos_enviados" if errores == 0 else "completado"
+    try:
+        enviados, errores, omitidos = enviar_correos_lote(db, lote)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     db.commit()
 
     return ProcesarLoteResponse(
@@ -194,7 +200,8 @@ def enviar_correos(
         lineas=lote.cantidad_pagos,
         correos_enviados=enviados,
         correos_error=errores,
-        mensaje=f"Correos enviados: {enviados}, errores: {errores}",
+        mensaje=f"Correos enviados: {enviados}, errores: {errores}"
+        + (f", omitidos (ya enviados): {omitidos}" if omitidos else ""),
     )
 
 
@@ -210,11 +217,13 @@ def procesar_lote_completo(
         return gen
 
     lote = svc.get_lote(db, lote_id)
-    enviados, errores = enviar_correos_lote(db, lote)
-    if enviados:
-        lote.estado = "correos_enviados" if errores == 0 else "completado"
+    try:
+        enviados, errores, omitidos = enviar_correos_lote(db, lote)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     db.commit()
 
+    extra = f", omitidos: {omitidos}" if omitidos else ""
     return ProcesarLoteResponse(
         lote_id=lote_id,
         archivo=gen.archivo,
@@ -222,5 +231,5 @@ def procesar_lote_completo(
         lineas=gen.lineas,
         correos_enviados=enviados,
         correos_error=errores,
-        mensaje=f"Archivo generado. Correos: {enviados} enviados, {errores} errores",
+        mensaje=f"{gen.mensaje} | Correos: {enviados} enviados, {errores} errores{extra}",
     )

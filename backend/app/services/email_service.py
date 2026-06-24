@@ -4,13 +4,17 @@ from __future__ import annotations
 import smtplib
 from datetime import UTC, datetime
 from decimal import Decimal, ROUND_HALF_UP
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models import Banco, EnvioCorreo, LotePago, Pago
 from app.services.config_service import get_campo_factura, get_smtp_config
+from app.services.email_assets import BANNER_CID, get_banner_path
+from app.services.email_templates import construir_correo, saludo_por_hora
 
 
 def _formato_monto_entero(importe: Decimal) -> str:
@@ -30,23 +34,68 @@ def _numero_factura(pago: Pago, campo: str) -> str:
     return str(valor).replace("fv", "").replace("FV", "").strip()
 
 
-def _cuerpo_correo(pago: Pago, banco_nombre: str) -> str:
-    factura = _numero_factura(pago, "concepto1")
+def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[str, str]:
+    factura = _numero_factura(pago, campo_factura)
     monto_entero = _formato_monto_entero(Decimal(pago.importe))
     monto_exacto = _formato_monto_exacto(Decimal(pago.importe))
+    saludo = saludo_por_hora()
 
-    texto = f"""Buenas tardes
+    return construir_correo(
+        saludo=saludo,
+        factura=factura,
+        monto_entero=monto_entero,
+        monto_exacto=monto_exacto,
+        razon_social=pago.razon_social or "",
+        referencia_16=pago.referencia_16 or "",
+        referencia_11=pago.referencia_11 or "",
+        banco_nombre=banco_nombre,
+    )
 
-envio soporte de pago fv {factura}
-valor consignado ${monto_entero}
-mil gracias
 
-{pago.razon_social}\t{pago.referencia_16 or ''}\t{pago.referencia_11 or ''}\t{banco_nombre}\tAbono/Cargo cuenta\t{monto_exacto}
-"""
-    return texto
+def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_plano: str, html: str):
+    """Mensaje multipart con HTML y banner embebido (cid) si existe."""
+    msg = MIMEMultipart("mixed")
+    msg["From"] = f"{smtp_cfg['from_name']} <{smtp_cfg['from_email']}>"
+    msg["To"] = destinatario
+    msg["Subject"] = asunto
+
+    alt = MIMEMultipart("alternative")
+    msg.attach(alt)
+    alt.attach(MIMEText(texto_plano, "plain", "utf-8"))
+
+    banner_path = get_banner_path()
+    use_cid = banner_path and not get_settings().email_firma_banner_url
+
+    if use_cid and banner_path:
+        related = MIMEMultipart("related")
+        alt.attach(related)
+        related.attach(MIMEText(html, "html", "utf-8"))
+        img_data = banner_path.read_bytes()
+        img = MIMEImage(img_data, _subtype="png")
+        img.add_header("Content-ID", f"<{BANNER_CID}>")
+        img.add_header("Content-Disposition", "inline", filename="email-banner-colbeef.png")
+        related.attach(img)
+    else:
+        alt.attach(MIMEText(html, "html", "utf-8"))
+
+    return msg
 
 
-def enviar_correo_pago(db: Session, pago: Pago, smtp: dict | None = None) -> EnvioCorreo:
+def _pago_ya_enviado(pago: Pago) -> bool:
+    return pago.estado == "correo_enviado"
+
+
+def enviar_correo_pago(
+    db: Session,
+    pago: Pago,
+    smtp: dict | None = None,
+    *,
+    campo_factura: str = "concepto1",
+) -> EnvioCorreo | None:
+    """Envía correo. Devuelve None si el pago ya tenía correo enviado (no reenvía)."""
+    if _pago_ya_enviado(pago):
+        return None
+
     smtp_cfg = smtp or get_smtp_config(db)
     destinatario = (pago.email_destino or "").strip()
     asunto = f"SOPORTE DE PAGO {pago.razon_social}"
@@ -73,11 +122,8 @@ def enviar_correo_pago(db: Session, pago: Pago, smtp: dict | None = None) -> Env
     banco = db.get(Banco, pago.banco_codigo)
     banco_txt = f"{pago.banco_codigo:04d} - {banco.descripcion}" if banco else str(pago.banco_codigo)
 
-    msg = MIMEMultipart()
-    msg["From"] = f"{smtp_cfg['from_name']} <{smtp_cfg['from_email']}>"
-    msg["To"] = destinatario
-    msg["Subject"] = asunto
-    msg.attach(MIMEText(_cuerpo_correo(pago, banco_txt), "plain", "utf-8"))
+    texto_plano, html = _cuerpo_correo(pago, banco_txt, campo_factura)
+    msg = _construir_mensaje(smtp_cfg, destinatario, asunto, texto_plano, html)
 
     try:
         smtp_class = smtplib.SMTP_SSL if smtp_cfg.get("use_ssl") else smtplib.SMTP
@@ -98,18 +144,48 @@ def enviar_correo_pago(db: Session, pago: Pago, smtp: dict | None = None) -> Env
     return envio
 
 
-def enviar_correos_lote(db: Session, lote: LotePago) -> tuple[int, int]:
+def lote_correos_ya_enviados(lote: LotePago) -> bool:
+    return lote.estado == "correos_enviados"
+
+
+def pagos_pendientes_correo(lote: LotePago) -> list[Pago]:
+    return [
+        p
+        for p in lote.pagos
+        if p.estado not in ("anulado", "correo_enviado")
+    ]
+
+
+def enviar_correos_lote(db: Session, lote: LotePago) -> tuple[int, int, int]:
+    """
+    Envía correos pendientes del lote.
+    Retorna (enviados, errores, omitidos_ya_enviados).
+  """
+    if lote_correos_ya_enviados(lote):
+        raise ValueError("Los correos de este lote ya fueron enviados. No se permiten reenvíos.")
+
     campo_factura = get_campo_factura(db)
     smtp = get_smtp_config(db)
     enviados = 0
     errores = 0
+    omitidos = 0
+
+    pendientes = pagos_pendientes_correo(lote)
+    if not pendientes:
+        raise ValueError("No hay correos pendientes por enviar en este lote.")
 
     for pago in lote.pagos:
         if pago.estado == "anulado":
             continue
+        if _pago_ya_enviado(pago):
+            omitidos += 1
+            continue
         if not pago.numero_factura:
             pago.numero_factura = _numero_factura(pago, campo_factura)
-        envio = enviar_correo_pago(db, pago, smtp)
+        envio = enviar_correo_pago(db, pago, smtp, campo_factura=campo_factura)
+        if envio is None:
+            omitidos += 1
+            continue
         if envio.estado == "enviado":
             enviados += 1
         else:
@@ -119,4 +195,4 @@ def enviar_correos_lote(db: Session, lote: LotePago) -> tuple[int, int]:
         lote.estado = "correos_enviados"
     elif enviados:
         lote.estado = "completado"
-    return enviados, errores
+    return enviados, errores, omitidos

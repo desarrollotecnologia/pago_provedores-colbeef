@@ -90,6 +90,29 @@ export default function LoteDetail() {
   };
 
   const runAction = async (action: "archivo" | "correos" | "procesar" | "procesar-sin-correos") => {
+    if (!lote) return;
+
+    const yaEnviados = lote.estado === "correos_enviados";
+    const pendientes = lote.pagos.filter(
+      (p) => p.estado !== "anulado" && p.estado !== "correo_enviado"
+    ).length;
+
+    if (action === "correos" || action === "procesar") {
+      if (yaEnviados) {
+        alert("Los correos de este lote ya fueron enviados. No se permiten reenvíos.");
+        return;
+      }
+      if (pendientes === 0) {
+        alert("No hay correos pendientes por enviar en este lote.");
+        return;
+      }
+      const texto =
+        action === "procesar"
+          ? `¿Está seguro de generar el archivo y enviar ${pendientes} correo(s) a los proveedores?\n\nSolo se permite un envío por lote.`
+          : `¿Está seguro de enviar ${pendientes} correo(s) de soporte de pago?\n\nSolo se permite un envío por lote. No podrá reenviarlos.`;
+      if (!confirm(texto)) return;
+    }
+
     setProcessing(true);
     setError("");
     setMessage("");
@@ -128,6 +151,9 @@ export default function LoteDetail() {
   if (!lote) return <p className="alert alert-error">Lote no encontrado</p>;
 
   const editable = lote.estado === "borrador";
+  const correosYaEnviados = lote.estado === "correos_enviados";
+  const puedeEnviarCorreos =
+    Boolean(lote.archivo_plano_nombre) && !correosYaEnviados && !processing;
 
   return (
     <>
@@ -166,15 +192,17 @@ export default function LoteDetail() {
           <button
             type="button"
             className="btn btn-secondary"
-            disabled={processing || !lote.archivo_plano_nombre}
+            disabled={!puedeEnviarCorreos}
+            title={correosYaEnviados ? "Los correos ya fueron enviados" : undefined}
             onClick={() => runAction("correos")}
           >
-            Enviar correos
+            {correosYaEnviados ? "Correos enviados" : "Enviar correos"}
           </button>
           <button
             type="button"
             className="btn btn-primary"
-            disabled={processing || !lote.pagos.length}
+            disabled={processing || !lote.pagos.length || correosYaEnviados}
+            title={correosYaEnviados ? "Los correos ya fueron enviados" : undefined}
             onClick={() => runAction("procesar")}
           >
             Procesar todo

@@ -49,15 +49,28 @@ if (static_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
 
 
+_NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+
+
 def _spa_index():
     index = static_dir / "index.html"
     if index.exists():
-        return FileResponse(index)
+        return FileResponse(index, headers=_NO_CACHE)
     return {
         "message": "API activa. Frontend no encontrado en frontend/dist",
         "docs": "/docs",
         "health": "/health",
     }
+
+
+@app.get("/email-banner-colbeef.png")
+def email_banner():
+    from app.services.email_assets import get_banner_path
+
+    path = get_banner_path()
+    if not path:
+        raise HTTPException(status_code=404, detail="Banner de correo no instalado")
+    return FileResponse(path, media_type="image/png")
 
 
 @app.get("/")
@@ -70,6 +83,6 @@ def spa_fallback(full_path: str):
     """Rutas del SPA (React Router) — devuelve index.html."""
     if full_path.startswith("api") or full_path in ("docs", "openapi.json", "health", "redoc"):
         raise HTTPException(status_code=404)
-    if full_path.startswith("assets/"):
+    if full_path.startswith("assets/") or full_path == "email-banner-colbeef.png":
         raise HTTPException(status_code=404)
     return _spa_index()
