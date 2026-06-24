@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
+import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
 import type { DashboardResponse } from "../types";
 import { formatMoney } from "../utils/format";
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,9 +38,23 @@ export default function AdminDashboard() {
   if (loading) return <p className="page-subtitle">Cargando dashboard…</p>;
 
   const r = data?.resumen;
+  const primerNombre = user?.nombre_completo?.split(" ")[0] ?? user?.username ?? "Usuario";
+  const fechaHoy = new Date().toLocaleDateString("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   return (
     <>
+      <div className="dashboard-welcome">
+        <div>
+          <h2>Hola, {primerNombre}</h2>
+          <p>{fechaHoy}</p>
+        </div>
+        <span className="dashboard-welcome-badge">Tesorería Colbeef</span>
+      </div>
+
       <div className="page-hero">
         <div>
           <p className="hero-eyebrow">Administración</p>
@@ -54,20 +70,48 @@ export default function AdminDashboard() {
 
       <div className="cards-grid">
         <div className="stat-card stat-card-accent">
-          <div className="label">Total pagado</div>
-          <div className="value">{formatMoney(r?.importe_total ?? 0)}</div>
+          <div className="stat-card-header">
+            <div>
+              <div className="label">Total pagado</div>
+              <div className="value">{formatMoney(r?.importe_total ?? 0)}</div>
+            </div>
+            <span className="stat-card-icon" aria-hidden>
+              $
+            </span>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="label">Proveedores activos</div>
-          <div className="value">{r?.cantidad_proveedores ?? 0}</div>
+          <div className="stat-card-header">
+            <div>
+              <div className="label">Proveedores activos</div>
+              <div className="value">{r?.cantidad_proveedores ?? 0}</div>
+            </div>
+            <span className="stat-card-icon" aria-hidden>
+              ◎
+            </span>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="label">Lotes del período</div>
-          <div className="value">{r?.cantidad_lotes ?? 0}</div>
+          <div className="stat-card-header">
+            <div>
+              <div className="label">Lotes del período</div>
+              <div className="value">{r?.cantidad_lotes ?? 0}</div>
+            </div>
+            <span className="stat-card-icon" aria-hidden>
+              ◫
+            </span>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="label">Movimientos</div>
-          <div className="value">{r?.cantidad_pagos ?? 0}</div>
+          <div className="stat-card-header">
+            <div>
+              <div className="label">Movimientos</div>
+              <div className="value">{r?.cantidad_pagos ?? 0}</div>
+            </div>
+            <span className="stat-card-icon" aria-hidden>
+              ⇄
+            </span>
+          </div>
         </div>
       </div>
 

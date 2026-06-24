@@ -4,6 +4,7 @@ import { ApiError, api } from "../api/client";
 import { getToken } from "../auth/session";
 import { trackAction } from "../telemetry/tracker";
 import InfoLote from "../components/InfoLote";
+import ProveedorSearch from "../components/ProveedorSearch";
 import StatusBadge from "../components/StatusBadge";
 import type { Lote, Proveedor } from "../types";
 import { formatMoney } from "../utils/format";
@@ -17,8 +18,6 @@ export default function LoteDetail() {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [searchQ, setSearchQ] = useState("");
-  const [searchResults, setSearchResults] = useState<Proveedor[]>([]);
   const [selectedProv, setSelectedProv] = useState<Proveedor | null>(null);
   const [pagoForm, setPagoForm] = useState({
     importe: "",
@@ -41,10 +40,24 @@ export default function LoteDetail() {
     load();
   }, [load]);
 
-  const searchProveedores = async () => {
-    if (!searchQ.trim()) return;
-    const res = await api.proveedores({ q: searchQ, page_size: 10 });
-    setSearchResults(res.items);
+  const openAddModal = () => {
+    setError("");
+    setSelectedProv(null);
+    setShowAdd(true);
+  };
+
+  const closeAddModal = () => {
+    setShowAdd(false);
+    setSelectedProv(null);
+    setError("");
+  };
+
+  const handleSelectProveedor = (p: Proveedor) => {
+    setSelectedProv(p);
+    setPagoForm((f) => ({
+      ...f,
+      email_destino: p.email ?? "",
+    }));
   };
 
   const handleAddPago = async (e: FormEvent) => {
@@ -62,8 +75,6 @@ export default function LoteDetail() {
       setShowAdd(false);
       setSelectedProv(null);
       setPagoForm({ importe: "", numero_factura: "", concepto1: "", email_destino: "" });
-      setSearchResults([]);
-      setSearchQ("");
       load();
       setMessage("Pago agregado al lote");
     } catch (err) {
@@ -135,7 +146,7 @@ export default function LoteDetail() {
         </div>
         <div className="btn-group">
           {editable && (
-            <button type="button" className="btn btn-primary" onClick={() => setShowAdd(true)}>
+            <button type="button" className="btn btn-primary" onClick={openAddModal}>
               + Agregar pago
             </button>
           )}
@@ -258,50 +269,13 @@ export default function LoteDetail() {
       </div>
 
       {showAdd && (
-        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={closeAddModal}>
+          <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
             <h3>Agregar pago al lote</h3>
             {error && <div className="alert alert-error">{error}</div>}
 
             {!selectedProv ? (
-              <>
-                <div className="search-bar">
-                  <input
-                    placeholder="Buscar proveedor…"
-                    value={searchQ}
-                    onChange={(e) => setSearchQ(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchProveedores())}
-                  />
-                  <button type="button" className="btn btn-secondary" onClick={searchProveedores}>
-                    Buscar
-                  </button>
-                </div>
-                {searchResults.length > 0 && (
-                  <div className="table-wrap">
-                    <table>
-                      <tbody>
-                        {searchResults.map((p) => (
-                          <tr
-                            key={p.id}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => {
-                              setSelectedProv(p);
-                              setPagoForm((f) => ({
-                                ...f,
-                                email_destino: p.email ?? "",
-                              }));
-                            }}
-                          >
-                            <td>{p.razon_social}</td>
-                            <td>{p.identificacion}</td>
-                            <td>{p.banco?.descripcion}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
+              <ProveedorSearch onSelect={handleSelectProveedor} />
             ) : (
               <form onSubmit={handleAddPago}>
                 <div className="alert alert-info">
@@ -354,7 +328,7 @@ export default function LoteDetail() {
                   <button type="submit" className="btn btn-primary">
                     Agregar
                   </button>
-                  <button type="button" className="btn btn-outline" onClick={() => setShowAdd(false)}>
+                  <button type="button" className="btn btn-outline" onClick={closeAddModal}>
                     Cancelar
                   </button>
                 </div>
