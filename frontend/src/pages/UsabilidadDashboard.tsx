@@ -208,7 +208,7 @@ export default function UsabilidadDashboard() {
         <div className="stat-card stat-card-accent">
           <div className="label">Última actividad</div>
           <div className="value" style={{ fontSize: "0.85rem", lineHeight: 1.4 }}>
-            {kpis?.ultima_actividad.usuario ? (
+            {kpis?.ultima_actividad?.usuario ? (
               <>
                 <strong>{kpis.ultima_actividad.usuario}</strong>
                 <br />
