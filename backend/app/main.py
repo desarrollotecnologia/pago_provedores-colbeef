@@ -4,16 +4,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from app.api.routes import auth, catalogos, lotes, proveedores, sistema, usability
 from app.core.config import get_settings
+from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
     description="Sistema de gestión de pagos a proveedores",
-    version="1.0.0",
+    version=APP_VERSION,
 )
 
 app.add_middleware(
@@ -37,7 +39,8 @@ app.include_router(usability.router, prefix=API_PREFIX)
 def health_check():
     return {
         "status": "ok",
-        "version": "1.0.0",
+        "version": APP_VERSION,
+        "email_template": EMAIL_TEMPLATE_VERSION,
         "env": settings.app_env,
         "app_url": settings.app_url,
     }
@@ -45,11 +48,29 @@ def health_check():
 
 # Frontend estático — misma URL que la API (sin configurar rutas al migrar)
 static_dir = settings.static_dir
+
+_NO_CACHE = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Evita que el navegador sirva JS/CSS viejos tras un deploy."""
+
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers.update(_NO_CACHE)
+        return response
+
+
 if (static_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
-
-
-_NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+    app.mount(
+        "/assets",
+        NoCacheStaticFiles(directory=static_dir / "assets"),
+        name="assets",
+    )
 
 
 def _spa_index():

@@ -37,7 +37,21 @@ export default function Config() {
             <label>Versión API</label>
             <input value={config?.version ?? ""} readOnly />
           </div>
+          <div className="form-group">
+            <label>Plantilla correo</label>
+            <input value={config?.email_template_version ?? "—"} readOnly />
+          </div>
+          <div className="form-group">
+            <label>Interfaz (UI)</label>
+            <input value={config?.ui_version ?? "—"} readOnly />
+          </div>
         </div>
+        {config && config.version !== "1.2.0" && (
+          <div className="alert alert-warn" style={{ marginTop: "1rem" }}>
+            Versión desactualizada. En el servidor ejecute{" "}
+            <code>scripts\update_server.bat</code> y recargue con Ctrl+Shift+R.
+          </div>
+        )}
       </div>
 
       <div className="card">

@@ -14,6 +14,7 @@ SMTP_POLICY = policy.SMTP
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.version import APP_VERSION
 from app.models import Banco, EnvioCorreo, LotePago, Pago
 from app.services.config_service import get_campo_factura, get_smtp_config
 from app.services.email_assets import BANNER_CID, get_banner_path
@@ -56,7 +57,7 @@ def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[s
 
 
 def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_plano: str, html: str):
-    """Multipart/alternative (plain + html) con banner inline si existe."""
+    """Correo HTML (con texto plano de respaldo) y banner inline si existe."""
     banner_path = get_banner_path()
     use_cid = banner_path and not get_settings().email_firma_banner_url
 
@@ -82,7 +83,7 @@ def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_pla
     msg["To"] = destinatario
     msg["Subject"] = asunto
     msg["MIME-Version"] = "1.0"
-    msg["X-Mailer"] = "PagoProveedores-Colbeef"
+    msg["X-Mailer"] = f"PagoProveedores-Colbeef/{APP_VERSION}"
 
     return msg
 

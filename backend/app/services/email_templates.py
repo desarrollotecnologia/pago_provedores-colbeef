@@ -11,7 +11,7 @@ from app.services.email_assets import BANNER_CID, banner_public_url, get_banner_
 TZ_COLOMBIA = ZoneInfo("America/Bogota")
 GREEN = "#1a6b42"
 RED = "#c62828"
-EMAIL_VERSION = "2"
+from app.version import EMAIL_TEMPLATE_VERSION
 
 
 def saludo_por_hora(fecha: datetime | None = None) -> str:
@@ -162,7 +162,7 @@ mil gracias
   <title>Soporte de pago</title>
 </head>
 <body style="margin:0;padding:0;background:#eef4f0;font-family:Arial,Helvetica,sans-serif;">
-<!-- pago-proveedores-email v{EMAIL_VERSION} -->
+<!-- pago-proveedores-email v{EMAIL_TEMPLATE_VERSION} -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef4f0;">
   <tr>
     <td align="center" style="padding:24px 12px;">

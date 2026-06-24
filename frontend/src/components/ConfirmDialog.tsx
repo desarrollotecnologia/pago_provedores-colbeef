@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -56,7 +57,7 @@ export default function ConfirmDialog({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="confirm-overlay"
       role="presentation"
@@ -104,6 +105,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

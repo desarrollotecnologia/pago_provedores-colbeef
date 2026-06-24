@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
 from app.core.config import get_settings
+from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION, UI_VERSION
 from app.core.database import get_db
 from app.models import CuentaOrdenante, Usuario
 from app.schemas.common import MessageResponse
@@ -23,8 +24,10 @@ def config_publica():
         app_name=s.app_name,
         app_url=s.app_url,
         api_base="/api",
-        version="1.0.0",
+        version=APP_VERSION,
         env=s.app_env,
+        email_template_version=EMAIL_TEMPLATE_VERSION,
+        ui_version=UI_VERSION,
     )
 
 

@@ -18,6 +18,8 @@ export interface PublicConfig {
   api_base: string;
   version: string;
   env: string;
+  email_template_version?: string;
+  ui_version?: string;
 }
 
 export interface CatalogoItem {

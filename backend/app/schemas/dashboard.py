@@ -32,3 +32,5 @@ class PublicConfig(BaseModel):
     api_base: str
     version: str
     env: str
+    email_template_version: str = "1"
+    ui_version: str = ""
