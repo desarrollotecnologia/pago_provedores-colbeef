@@ -8,8 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { api, setUnauthorizedHandler } from "../api/client";
-import { clearSession, getToken, setToken } from "../auth/session";
-import { trackSessionStart } from "../telemetry/tracker";
+import { clearSession, purgeLegacyAuthStorage, setToken } from "../auth/session";
+import { clearTelemetrySession, trackSessionStart } from "../telemetry/tracker";
 import type { PublicConfig, UsuarioAuth } from "../types";
 
 interface AuthState {
@@ -29,37 +29,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearSession();
+    clearTelemetrySession();
     setUser(null);
   }, []);
 
   useEffect(() => {
+    purgeLegacyAuthStorage();
     setUnauthorizedHandler(() => {
+      clearTelemetrySession();
       setUser(null);
     });
-  }, []);
-
-  useEffect(() => {
     api.config().then(setConfig).catch(() => null);
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api
-      .me()
-      .then((u) => {
-        setUser(u);
-        trackSessionStart(u.rol);
-      })
-      .catch(() => {
-        clearSession();
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+    setLoading(false);
   }, []);
 
   const login = useCallback(async (usuario: string, password: string) => {
     const res = await api.login(usuario, password);
+    purgeLegacyAuthStorage();
     setToken(res.access_token);
     setUser(res.usuario);
     trackSessionStart(res.usuario.rol);

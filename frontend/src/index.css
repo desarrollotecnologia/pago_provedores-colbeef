@@ -302,13 +302,35 @@ button, input, select, textarea { font: inherit; }
 .stat-card-accent .stat-card-icon {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
-.stat-card-accent .label { color: rgba(255,255,255,0.8); }
-.stat-card-accent .value { color: #fff; }
+.stat-card .label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
-.stat-card .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--green-800); letter-spacing: -0.03em; line-height: 1.1; }
+.stat-card .value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--green-800);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* Después de .stat-card .value para que gane sobre el verde oscuro */
+.stat-card.stat-card-accent .label {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.stat-card.stat-card-accent .value {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
 
 .dashboard-welcome {
   display: flex;

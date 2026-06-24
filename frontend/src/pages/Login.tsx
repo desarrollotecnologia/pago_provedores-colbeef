@@ -91,9 +91,10 @@ export default function Login() {
               </button>
             </form>
 
-            <p className="login-security-note">
-              La sesión es privada por navegador. Compartir un enlace no da acceso sin credenciales.
-            </p>
+          <p className="login-security-note">
+            La sesión solo dura mientras esta pestaña está abierta. Al recargar o abrir el enlace en
+            otra pestaña deberá iniciar sesión de nuevo.
+          </p>
           </div>
         </div>
       </div>

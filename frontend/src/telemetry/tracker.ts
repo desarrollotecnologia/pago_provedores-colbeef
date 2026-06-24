@@ -10,9 +10,6 @@ export type UsabilityAction =
   | "error_ui"
   | "admin_open";
 
-const SESSION_KEY = "usability_session_id";
-const SESSION_STARTED_KEY = "usability_session_started";
-
 const ROUTE_MODULES: Record<string, string> = {
   "/": "inicio",
   "/proveedores": "proveedores",
@@ -20,6 +17,9 @@ const ROUTE_MODULES: Record<string, string> = {
   "/config": "configuracion",
   "/usabilidad": "usabilidad",
 };
+
+let memorySessionId: string | null = null;
+let sessionStarted = false;
 
 function createSessionId(): string {
   if (globalThis.crypto?.randomUUID) {
@@ -30,12 +30,15 @@ function createSessionId(): string {
 }
 
 export function getSessionId(): string {
-  let id = sessionStorage.getItem(SESSION_KEY);
-  if (!id) {
-    id = createSessionId();
-    sessionStorage.setItem(SESSION_KEY, id);
+  if (!memorySessionId) {
+    memorySessionId = createSessionId();
   }
-  return id;
+  return memorySessionId;
+}
+
+export function clearTelemetrySession(): void {
+  memorySessionId = null;
+  sessionStarted = false;
 }
 
 function canTrack(): boolean {
@@ -87,8 +90,8 @@ export function track(
 
 export function trackSessionStart(rol: string): void {
   try {
-    if (sessionStorage.getItem(SESSION_STARTED_KEY)) return;
-    sessionStorage.setItem(SESSION_STARTED_KEY, "1");
+    if (sessionStarted) return;
+    sessionStarted = true;
     track("session_start", "auth", `Inicio de sesión (${rol})`);
   } catch {
     /* silencioso — no interferir con login */
