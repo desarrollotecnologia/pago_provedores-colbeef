@@ -37,6 +37,19 @@ def _banner_img_src() -> str | None:
     return banner_public_url()
 
 
+def _firma_texto() -> str:
+    s = get_settings()
+    return f"""
+--
+{s.email_firma_nombre}
+{s.email_firma_cargo} | {s.email_firma_empresa}
+Tel: {s.email_firma_telefono}
+{s.email_firma_email}
+{s.email_firma_direccion}
+{s.email_firma_web}
+"""
+
+
 def _firma_html() -> str:
     s = get_settings()
     nombre = escape(s.email_firma_nombre)
@@ -117,9 +130,20 @@ valor consignado ${monto_entero}
 mil gracias
 
 {fila}
-"""
+{_firma_texto()}"""
 
-    fila_html = escape(fila).replace("\t", "&nbsp;&nbsp;")
+    fila_celdas = [
+        escape(razon_social),
+        escape(referencia_16),
+        escape(referencia_11),
+        escape(banco_nombre),
+        "Abono/Cargo cuenta",
+        escape(monto_exacto),
+    ]
+    fila_html = "".join(
+        f'<td style="padding:6px 10px;border:1px solid #d4e5db;font-size:12px;">{c}</td>'
+        for c in fila_celdas
+    )
 
     html = f"""<!DOCTYPE html>
 <html><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222;margin:0;padding:16px;">
@@ -129,7 +153,17 @@ envio soporte de pago fv {escape(factura)}<br>
 valor consignado ${escape(monto_entero)}<br>
 mil gracias
 </p>
-<p style="margin:0 0 8px;font-size:13px;white-space:pre-wrap;">{fila_html}</p>
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 0 16px;max-width:100%;">
+  <tr style="background:{GREEN};color:#fff;font-size:11px;">
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Proveedor</td>
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Cuenta</td>
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Ref.</td>
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Banco</td>
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Concepto</td>
+    <td style="padding:6px 10px;border:1px solid {GREEN};">Valor</td>
+  </tr>
+  <tr>{fila_html}</tr>
+</table>
 {_firma_html()}
 </body></html>"""
 

@@ -53,30 +53,33 @@ def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[s
 
 
 def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_plano: str, html: str):
-    """Mensaje multipart con HTML y banner embebido (cid) si existe."""
-    msg = MIMEMultipart("mixed")
-    msg["From"] = f"{smtp_cfg['from_name']} <{smtp_cfg['from_email']}>"
-    msg["To"] = destinatario
-    msg["Subject"] = asunto
-
-    alt = MIMEMultipart("alternative")
-    msg.attach(alt)
-    alt.attach(MIMEText(texto_plano, "plain", "utf-8"))
-
+    """Mensaje multipart: alternative (plain+html) y banner inline según RFC 2387."""
     banner_path = get_banner_path()
     use_cid = banner_path and not get_settings().email_firma_banner_url
 
+    plain = MIMEText(texto_plano, "plain", "utf-8")
+    html_part = MIMEText(html, "html", "utf-8")
+
     if use_cid and banner_path:
-        related = MIMEMultipart("related")
-        alt.attach(related)
-        related.attach(MIMEText(html, "html", "utf-8"))
+        msg = MIMEMultipart("related")
+        alt = MIMEMultipart("alternative")
+        alt.attach(plain)
+        alt.attach(html_part)
+        msg.attach(alt)
         img_data = banner_path.read_bytes()
         img = MIMEImage(img_data, _subtype="png")
         img.add_header("Content-ID", f"<{BANNER_CID}>")
         img.add_header("Content-Disposition", "inline", filename="email-banner-colbeef.png")
-        related.attach(img)
+        msg.attach(img)
     else:
-        alt.attach(MIMEText(html, "html", "utf-8"))
+        msg = MIMEMultipart("alternative")
+        msg.attach(plain)
+        msg.attach(html_part)
+
+    msg["From"] = f"{smtp_cfg['from_name']} <{smtp_cfg['from_email']}>"
+    msg["To"] = destinatario
+    msg["Subject"] = asunto
+    msg["MIME-Version"] = "1.0"
 
     return msg
 
