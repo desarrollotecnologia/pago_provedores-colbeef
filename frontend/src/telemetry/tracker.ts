@@ -21,10 +21,18 @@ const ROUTE_MODULES: Record<string, string> = {
   "/usabilidad": "usabilidad",
 };
 
+function createSessionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  const random = Math.random().toString(36).slice(2, 12);
+  return `${Date.now().toString(36)}-${random}`;
+}
+
 export function getSessionId(): string {
   let id = sessionStorage.getItem(SESSION_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = createSessionId();
     sessionStorage.setItem(SESSION_KEY, id);
   }
   return id;
@@ -40,43 +48,51 @@ export function track(
   detail?: string,
   meta?: Record<string, unknown>
 ): void {
-  if (!canTrack()) return;
+  try {
+    if (!canTrack()) return;
 
-  const safeMeta = meta
-    ? Object.fromEntries(
-        Object.entries(meta).filter(
-          ([k]) => !["password", "token", "secret", "access_token"].includes(k.toLowerCase())
+    const safeMeta = meta
+      ? Object.fromEntries(
+          Object.entries(meta).filter(
+            ([k]) => !["password", "token", "secret", "access_token"].includes(k.toLowerCase())
+          )
         )
-      )
-    : undefined;
+      : undefined;
 
-  const body = {
-    session_id: getSessionId(),
-    action,
-    module,
-    detail: detail?.slice(0, 255),
-    page: window.location.pathname,
-    meta: safeMeta,
-    timestamp: new Date().toISOString(),
-  };
+    const body = {
+      session_id: getSessionId(),
+      action,
+      module,
+      detail: detail?.slice(0, 255),
+      page: window.location.pathname,
+      meta: safeMeta,
+      timestamp: new Date().toISOString(),
+    };
 
-  fetch("/api/usability/event", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify(body),
-    keepalive: true,
-  }).catch(() => {
-    /* silencioso — no interferir con UX */
-  });
+    fetch("/api/usability/event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => {
+      /* silencioso — no interferir con UX */
+    });
+  } catch {
+    /* silencioso — el tracking no debe romper la app */
+  }
 }
 
 export function trackSessionStart(rol: string): void {
-  if (sessionStorage.getItem(SESSION_STARTED_KEY)) return;
-  sessionStorage.setItem(SESSION_STARTED_KEY, "1");
-  track("session_start", "auth", `Inicio de sesión (${rol})`);
+  try {
+    if (sessionStorage.getItem(SESSION_STARTED_KEY)) return;
+    sessionStorage.setItem(SESSION_STARTED_KEY, "1");
+    track("session_start", "auth", `Inicio de sesión (${rol})`);
+  } catch {
+    /* silencioso — no interferir con login */
+  }
 }
 
 export function trackModuleFromPath(pathname: string): void {

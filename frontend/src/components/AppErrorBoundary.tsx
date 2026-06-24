@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { clearSession } from "../auth/session";
 
 interface Props {
   children: ReactNode;
@@ -33,7 +34,10 @@ export default class AppErrorBoundary extends Component<Props, State> {
               <button
                 type="button"
                 className="btn btn-primary btn-block"
-                onClick={() => window.location.assign("/login")}
+                onClick={() => {
+                  clearSession();
+                  window.location.assign("/login");
+                }}
               >
                 Volver al inicio de sesión
               </button>
