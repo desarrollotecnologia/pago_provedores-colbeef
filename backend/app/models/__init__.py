@@ -102,6 +102,7 @@ class Proveedor(Base):
         SmallInteger, ForeignKey("tipos_cuenta.codigo"), nullable=False
     )
     numero_cuenta: Mapped[str] = mapped_column(String(20), nullable=False)
+    cod_oficina: Mapped[str | None] = mapped_column(String(10), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(

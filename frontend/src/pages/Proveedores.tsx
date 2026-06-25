@@ -21,6 +21,7 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
     banco_codigo: initial?.banco_codigo ?? bancos[0]?.codigo ?? 1,
     tipo_cuenta: initial?.tipo_cuenta ?? 1,
     numero_cuenta: initial?.numero_cuenta ?? "",
+    cod_oficina: initial?.cod_oficina ?? "",
     email: initial?.email ?? "",
   });
   const [error, setError] = useState("");
@@ -32,7 +33,13 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
     setError("");
     const payload = {
       ...form,
-      digito_verificacion: form.digito_verificacion ? parseInt(form.digito_verificacion, 10) : null,
+      digito_verificacion:
+        form.tipo_identificacion === 3
+          ? form.digito_verificacion
+            ? parseInt(form.digito_verificacion, 10)
+            : null
+          : 0,
+      cod_oficina: form.cod_oficina.trim() || null,
       email: form.email || null,
     };
     try {
@@ -128,6 +135,15 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
                 value={form.numero_cuenta}
                 onChange={(e) => setForm({ ...form, numero_cuenta: e.target.value })}
                 required
+              />
+            </div>
+            <div className="form-group">
+              <label>Cód. oficina (opcional)</label>
+              <input
+                value={form.cod_oficina}
+                onChange={(e) => setForm({ ...form, cod_oficina: e.target.value })}
+                placeholder="Ej. 0509"
+                maxLength={10}
               />
             </div>
             <div className="form-group">
@@ -255,7 +271,9 @@ export default function Proveedores() {
                     <tr key={p.id}>
                       <td>
                         {p.identificacion}
-                        {p.digito_verificacion != null ? `-${p.digito_verificacion}` : ""}
+                        {p.tipo_identificacion === 3 && p.digito_verificacion != null
+                          ? `-${p.digito_verificacion}`
+                          : ""}
                       </td>
                       <td>{p.razon_social}</td>
                       <td>{p.banco?.descripcion ?? p.banco_codigo}</td>

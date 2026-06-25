@@ -12,7 +12,15 @@ class ProveedorBase(BaseModel):
     banco_codigo: int = Field(..., ge=1)
     tipo_cuenta: int = Field(..., ge=1, le=2)
     numero_cuenta: str = Field(..., min_length=1, max_length=20)
+    cod_oficina: str | None = Field(None, max_length=10)
     email: str | None = None
+
+    @field_validator("cod_oficina", mode="before")
+    @classmethod
+    def normalize_cod_oficina(cls, v):
+        if v is None or str(v).strip() == "":
+            return None
+        return str(v).strip()
 
     @field_validator("identificacion", "numero_cuenta", "razon_social", mode="before")
     @classmethod
@@ -47,15 +55,23 @@ class ProveedorUpdate(BaseModel):
     banco_codigo: int | None = Field(None, ge=1)
     tipo_cuenta: int | None = Field(None, ge=1, le=2)
     numero_cuenta: str | None = Field(None, min_length=1, max_length=20)
+    cod_oficina: str | None = Field(None, max_length=10)
     email: str | None = None
     activo: bool | None = None
 
-    @field_validator("identificacion", "numero_cuenta", "razon_social", mode="before")
+    @field_validator("identificacion", "numero_cuenta", "razon_social", "cod_oficina", mode="before")
     @classmethod
-    def strip_strings(cls, v):
+    def strip_strings_update(cls, v):
         if isinstance(v, str):
             return v.strip()
         return v
+
+    @field_validator("cod_oficina", mode="before")
+    @classmethod
+    def normalize_cod_oficina_update(cls, v):
+        if v is None or str(v).strip() == "":
+            return None
+        return str(v).strip()
 
     @field_validator("razon_social")
     @classmethod
@@ -87,6 +103,7 @@ class ProveedorResponse(BaseModel):
     banco_codigo: int
     tipo_cuenta: int
     numero_cuenta: str
+    cod_oficina: str | None
     email: str | None
     activo: bool
     creado_en: datetime

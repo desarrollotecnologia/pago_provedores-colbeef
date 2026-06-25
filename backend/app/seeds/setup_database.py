@@ -53,7 +53,38 @@ def create_database_if_not_exists() -> None:
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    _apply_schema_patches()
     print("  Tablas creadas/verificadas.")
+
+
+def _apply_schema_patches() -> None:
+    """Añade columnas nuevas en instalaciones existentes."""
+    with engine.connect() as conn:
+        if not conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'proveedores'
+                  AND COLUMN_NAME = 'cod_oficina'
+                """
+            )
+        ).scalar():
+            conn.execute(
+                text("ALTER TABLE proveedores ADD COLUMN cod_oficina VARCHAR(10) NULL")
+            )
+            conn.commit()
+        conn.execute(
+            text(
+                """
+                UPDATE proveedores
+                SET digito_verificacion = 0
+                WHERE tipo_identificacion != 3
+                  AND (digito_verificacion IS NULL OR digito_verificacion != 0)
+                """
+            )
+        )
+        conn.commit()
 
 
 def create_resumen_view() -> None:

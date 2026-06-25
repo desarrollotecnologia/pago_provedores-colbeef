@@ -45,6 +45,16 @@ def _clean_text(value) -> str:
     return str(value).strip()
 
 
+def _normalize_digito(tipo_id: int | None, digito_v) -> int | None:
+    """Regla Excel: dígito solo para NIT; cualquier otro tipo es 0."""
+    if tipo_id is None:
+        return None
+    if tipo_id != 3:
+        return 0
+    d = _to_int(digito_v)
+    return d if d is not None else None
+
+
 def _get_workbook(path: Path) -> xlrd.Book:
     if not path.exists():
         raise FileNotFoundError(f"No se encontró el archivo Excel: {path}")
@@ -61,6 +71,7 @@ def import_from_excel(excel_path: str | None = None) -> dict:
     db = SessionLocal()
     try:
         stats["bancos"] = _import_bancos(db, wb)
+        stats["bancos"] += _ensure_bancos_beneficiarios(db, wb)
         stats["oficinas"] = _import_oficinas(db, wb)
         stats["cuentas"] = _import_cuentas(db, wb)
         imported, omitted = _import_proveedores(db, wb)
@@ -159,6 +170,31 @@ def _import_cuentas(db, wb: xlrd.Book) -> int:
     return count
 
 
+def _ensure_bancos_beneficiarios(db, wb: xlrd.Book) -> int:
+    """Crea bancos referenciados en Beneficiarios que no estén en la hoja Bancos."""
+    sh = wb.sheet_by_name("Beneficiarios")
+    existentes = {b.codigo for b in db.scalars(select(Banco)).all()}
+    nuevos = 0
+    for row_idx in range(2, sh.nrows):
+        codigo = _to_int(sh.cell_value(row_idx, 6))
+        if codigo is None or codigo in existentes:
+            continue
+        stmt = mysql_insert(Banco).values(
+            codigo=codigo,
+            descripcion=f"BANCO CODIGO {codigo}",
+            activo=True,
+        )
+        stmt = stmt.on_duplicate_key_update(
+            descripcion=stmt.inserted.descripcion, activo=True
+        )
+        db.execute(stmt)
+        existentes.add(codigo)
+        nuevos += 1
+    if nuevos:
+        db.flush()
+    return nuevos
+
+
 def _import_proveedores(db, wb: xlrd.Book) -> tuple[int, int]:
     sh = wb.sheet_by_name("Beneficiarios")
 
@@ -172,7 +208,7 @@ def _import_proveedores(db, wb: xlrd.Book) -> tuple[int, int]:
     for row_idx in range(2, sh.nrows):
         identificacion = _to_str_id(sh.cell_value(row_idx, 1))
         tipo_id = _to_int(sh.cell_value(row_idx, 2))
-        digito_v = _to_int(sh.cell_value(row_idx, 3))
+        digito_v = _normalize_digito(tipo_id, sh.cell_value(row_idx, 3))
         razon_social = _clean_text(sh.cell_value(row_idx, 4))
         forma_pago = _to_int(sh.cell_value(row_idx, 5)) or 1
         banco = _to_int(sh.cell_value(row_idx, 6))
@@ -200,7 +236,13 @@ def _import_proveedores(db, wb: xlrd.Book) -> tuple[int, int]:
             omitted += 1
             continue
 
-        digito_v = digito_v if digito_v is not None else None
+        if tipo_id == 3 and digito_v is None:
+            omitted += 1
+            continue
+
+        if not numero_cuenta.isdigit():
+            omitted += 1
+            continue
 
         stmt = mysql_insert(Proveedor).values(
             identificacion=identificacion,

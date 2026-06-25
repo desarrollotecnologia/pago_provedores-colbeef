@@ -42,6 +42,7 @@ export interface Proveedor {
   banco_codigo: number;
   tipo_cuenta: number;
   numero_cuenta: string;
+  cod_oficina: string | null;
   email: string | null;
   activo: boolean;
   creado_en: string;

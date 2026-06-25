@@ -9,6 +9,32 @@ from app.models import Banco, LotePago, Pago, Proveedor, TipoCuenta, TipoIdentif
 from app.schemas.proveedores import ProveedorCreate, ProveedorUpdate
 
 
+def _apply_digito_regla(data: dict) -> None:
+    """Dígito de verificación: solo NIT; demás tipos = 0 (regla Excel)."""
+    tipo_id = data.get("tipo_identificacion")
+    if tipo_id is not None and tipo_id != 3:
+        data["digito_verificacion"] = 0
+
+
+def _validate_proveedor_data(data: dict) -> None:
+    tipo_id = data.get("tipo_identificacion")
+    if tipo_id == 3 and data.get("digito_verificacion") is None:
+        raise HTTPException(status_code=400, detail="El NIT requiere dígito de verificación")
+    if tipo_id is not None and tipo_id != 3 and data.get("digito_verificacion") not in (0, None):
+        raise HTTPException(
+            status_code=400,
+            detail="El dígito de verificación solo aplica a NIT; use 0 para otros tipos",
+        )
+
+    cuenta = data.get("numero_cuenta")
+    if cuenta and not str(cuenta).strip().isdigit():
+        raise HTTPException(status_code=400, detail="El número de cuenta debe ser numérico")
+
+    cod_oficina = data.get("cod_oficina")
+    if cod_oficina is not None and cod_oficina != "" and not str(cod_oficina).strip().isdigit():
+        raise HTTPException(status_code=400, detail="El código de oficina debe ser numérico")
+
+
 def _validate_catalog_refs(db: Session, data: dict) -> None:
     if "tipo_identificacion" in data:
         tipo = db.get(TipoIdentificacion, data["tipo_identificacion"])
@@ -113,8 +139,10 @@ def create_proveedor(db: Session, data: ProveedorCreate) -> Proveedor:
     payload = data.model_dump()
     if payload.get("email") == "":
         payload["email"] = None
+    _apply_digito_regla(payload)
 
     _validate_catalog_refs(db, payload)
+    _validate_proveedor_data(payload)
     _check_duplicate(db, payload["identificacion"], payload["tipo_identificacion"])
 
     proveedor = Proveedor(**payload, activo=True)
@@ -133,10 +161,23 @@ def update_proveedor(
     if "email" in updates and updates["email"] == "":
         updates["email"] = None
 
+    merged = {
+        "identificacion": updates.get("identificacion", proveedor.identificacion),
+        "tipo_identificacion": updates.get("tipo_identificacion", proveedor.tipo_identificacion),
+        "digito_verificacion": updates.get("digito_verificacion", proveedor.digito_verificacion),
+        "numero_cuenta": updates.get("numero_cuenta", proveedor.numero_cuenta),
+        "cod_oficina": updates.get("cod_oficina", proveedor.cod_oficina),
+    }
+    tipo_id = merged["tipo_identificacion"]
+    _apply_digito_regla(merged)
+    if "tipo_identificacion" in updates or "digito_verificacion" in updates or tipo_id != 3:
+        updates["digito_verificacion"] = merged["digito_verificacion"]
+
+    _validate_proveedor_data(merged)
+
     _validate_catalog_refs(db, updates)
 
     identificacion = updates.get("identificacion", proveedor.identificacion)
-    tipo_id = updates.get("tipo_identificacion", proveedor.tipo_identificacion)
     if "identificacion" in updates or "tipo_identificacion" in updates:
         _check_duplicate(db, identificacion, tipo_id, exclude_id=proveedor_id)
 

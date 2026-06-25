@@ -141,12 +141,13 @@ def agregar_pago(db: Session, lote_id: int, item: PagoItemCreate) -> Pago:
 
     snap = _snapshot_proveedor(proveedor)
     numero_factura = item.numero_factura
+    cod_oficina = item.cod_oficina or proveedor.cod_oficina
 
     pago = Pago(
         lote_id=lote.id,
         proveedor_id=proveedor.id,
         importe=item.importe,
-        cod_oficina=item.cod_oficina,
+        cod_oficina=cod_oficina,
         fecha_limite=item.fecha_limite or lote.fecha_limite,
         concepto1=item.concepto1,
         concepto2=item.concepto2,
