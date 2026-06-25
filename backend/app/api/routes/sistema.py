@@ -1,6 +1,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,20 @@ def config_publica():
         email_template_version=EMAIL_TEMPLATE_VERSION,
         ui_version=UI_VERSION,
     )
+
+
+@router.get("/email-firma-preview", response_class=HTMLResponse)
+def email_firma_preview():
+    """Vista previa de la firma HTML (sin enviar correo)."""
+    from app.services.email_signature import firma_html
+
+    return f"""<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Firma correo Colbeef</title></head>
+<body style="margin:0;padding:24px;background:#eef4f0;font-family:Arial,sans-serif;">
+<div style="max-width:640px;margin:0 auto;background:#fff;padding:24px;border-radius:12px;">
+<h2 style="color:#1a6b42;margin:0 0 16px;font-size:1rem;">Vista previa — firma de correo</h2>
+{firma_html()}
+</div></body></html>"""
 
 
 @router.get("/dashboard", response_model=DashboardResponse)

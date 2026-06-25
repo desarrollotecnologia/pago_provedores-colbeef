@@ -8,12 +8,14 @@ cd /d "%ROOT%"
 set SRC=
 if exist "FIRMAS_COLBEEF_Mesa_de_trabajo_1.png" set SRC=FIRMAS_COLBEEF_Mesa_de_trabajo_1.png
 if exist "email-banner-colbeef.png" set SRC=email-banner-colbeef.png
+if exist "email-firma-colbeef.png" set SRC=email-firma-colbeef.png
 
 if "%SRC%"=="" (
   echo.
-  echo Copie el banner Colbeef en la raiz del proyecto con uno de estos nombres:
+  echo Copie la imagen del banner/firma Colbeef en la raiz del proyecto:
   echo   FIRMAS_COLBEEF_Mesa_de_trabajo_1.png
   echo   email-banner-colbeef.png
+  echo   email-firma-colbeef.png
   echo.
   echo Luego ejecute este script de nuevo.
   exit /b 1

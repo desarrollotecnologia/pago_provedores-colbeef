@@ -29,7 +29,7 @@ if errorlevel 1 (
 
 call venv\Scripts\activate.bat 2>nul
 cd backend
-python -c "from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION; assert APP_VERSION=='1.2.0'; assert EMAIL_TEMPLATE_VERSION=='2'; print('Backend OK:', APP_VERSION, 'correo v'+EMAIL_TEMPLATE_VERSION)"
+python -c "from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION; assert APP_VERSION=='1.2.0'; assert EMAIL_TEMPLATE_VERSION=='3'; print('Backend OK:', APP_VERSION, 'correo v'+EMAIL_TEMPLATE_VERSION)"
 if errorlevel 1 set ERR=1
 cd ..
 

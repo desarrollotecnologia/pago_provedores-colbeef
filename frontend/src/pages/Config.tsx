@@ -46,12 +46,17 @@ export default function Config() {
             <input value={config?.ui_version ?? "—"} readOnly />
           </div>
         </div>
-        {config && config.version !== "1.2.0" && (
+        {config && config.email_template_version !== "3" && (
           <div className="alert alert-warn" style={{ marginTop: "1rem" }}>
-            Versión desactualizada. En el servidor ejecute{" "}
-            <code>scripts\update_server.bat</code> y recargue con Ctrl+Shift+R.
+            Plantilla de correo desactualizada (v{config.email_template_version ?? "?"}). Ejecute{" "}
+            <code>scripts\update_server.bat</code> en el servidor.
           </div>
         )}
+        <p style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
+          <a href="/api/email-firma-preview" target="_blank" rel="noreferrer">
+            Ver vista previa de la firma de correo →
+          </a>
+        </p>
       </div>
 
       <div className="card">
