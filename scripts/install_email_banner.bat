@@ -6,6 +6,8 @@ set ROOT=%~dp0..
 cd /d "%ROOT%"
 
 set SRC=
+if exist "frontend\public\FIRMAS COLBEEF_Mesa de trabajo 1 (1).png" set "SRC=frontend\public\FIRMAS COLBEEF_Mesa de trabajo 1 (1).png"
+if exist "FIRMAS COLBEEF_Mesa de trabajo 1 (1).png" set "SRC=FIRMAS COLBEEF_Mesa de trabajo 1 (1).png"
 if exist "FIRMAS_COLBEEF_Mesa_de_trabajo_1.png" set SRC=FIRMAS_COLBEEF_Mesa_de_trabajo_1.png
 if exist "email-banner-colbeef.png" set SRC=email-banner-colbeef.png
 if exist "email-firma-colbeef.png" set SRC=email-firma-colbeef.png

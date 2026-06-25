@@ -6,6 +6,7 @@ from pathlib import Path
 from app.core.config import get_settings
 
 BANNER_FILENAME = "email-banner-colbeef.png"
+BANNER_ORIGINAL_FILENAME = "FIRMAS COLBEEF_Mesa de trabajo 1 (1).png"
 BANNER_CID = "colbeef_banner"
 
 
@@ -14,7 +15,9 @@ def banner_candidates() -> list[Path]:
     return [
         s.project_root / "backend" / "app" / "static" / BANNER_FILENAME,
         s.project_root / "frontend" / "public" / BANNER_FILENAME,
+        s.project_root / "frontend" / "public" / BANNER_ORIGINAL_FILENAME,
         s.static_dir / BANNER_FILENAME,
+        s.static_dir / BANNER_ORIGINAL_FILENAME,
     ]
 
 

@@ -33,6 +33,28 @@ def _asignar_referencias(pago: Pago) -> None:
     pago.referencia_11 = pago.numero_cuenta.strip()
 
 
+def _campos_faltantes_pago(pago: Pago) -> list[str]:
+    faltantes: list[str] = []
+    if Decimal(pago.importe) <= 0:
+        faltantes.append("importe")
+    if not (pago.numero_factura and str(pago.numero_factura).strip()):
+        faltantes.append("número de factura")
+    if not (pago.concepto1 and str(pago.concepto1).strip()):
+        faltantes.append("concepto")
+    if not (pago.email_destino and str(pago.email_destino).strip()):
+        faltantes.append("email destino")
+    return faltantes
+
+
+def _validar_pago_completo(pago: Pago) -> None:
+    faltantes = _campos_faltantes_pago(pago)
+    if faltantes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Campos obligatorios faltantes: {', '.join(faltantes)}",
+        )
+
+
 def _recalcular_lote(db: Session, lote: LotePago) -> None:
     pagos = db.scalars(select(Pago).where(Pago.lote_id == lote.id, Pago.estado != "anulado")).all()
     lote.importe_total = sum((p.importe for p in pagos), Decimal("0.00"))
@@ -118,7 +140,7 @@ def agregar_pago(db: Session, lote_id: int, item: PagoItemCreate) -> Pago:
         raise HTTPException(status_code=400, detail=f"Proveedor {item.proveedor_id} no válido")
 
     snap = _snapshot_proveedor(proveedor)
-    numero_factura = item.numero_factura or item.concepto1
+    numero_factura = item.numero_factura
 
     pago = Pago(
         lote_id=lote.id,
@@ -136,6 +158,7 @@ def agregar_pago(db: Session, lote_id: int, item: PagoItemCreate) -> Pago:
         email_destino=item.email_destino or proveedor.email,
     )
     db.add(pago)
+    _validar_pago_completo(pago)
     _recalcular_lote(db, lote)
     db.commit()
     db.refresh(pago)
@@ -152,6 +175,7 @@ def actualizar_pago(db: Session, pago_id: int, data: PagoItemUpdate) -> Pago:
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(pago, key, value)
 
+    _validar_pago_completo(pago)
     _recalcular_lote(db, lote)
     db.commit()
     db.refresh(pago)
@@ -205,6 +229,22 @@ def preparar_pagos_archivo(db: Session, lote: LotePago) -> list[Pago]:
     ]
     if not pagos:
         raise HTTPException(status_code=400, detail="No hay pagos válidos para procesar")
+
+    incompletos = [
+        p.razon_social
+        for p in pagos
+        if _campos_faltantes_pago(p)
+    ]
+    if incompletos:
+        nombres = ", ".join(incompletos[:5])
+        extra = f" y {len(incompletos) - 5} más" if len(incompletos) > 5 else ""
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"No se puede procesar: {len(incompletos)} pago(s) con datos incompletos "
+                f"(factura, concepto o email). Revise: {nombres}{extra}"
+            ),
+        )
 
     for pago in pagos:
         _asignar_referencias(pago)

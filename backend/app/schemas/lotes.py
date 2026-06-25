@@ -1,27 +1,27 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class PagoItemCreate(BaseModel):
     proveedor_id: int
-    importe: Decimal = Field(..., ge=0, decimal_places=2)
+    importe: Decimal = Field(..., gt=0, decimal_places=2)
     cod_oficina: str | None = None
     fecha_limite: date | None = None
-    concepto1: str | None = None
+    concepto1: str = Field(..., min_length=1, max_length=80)
     concepto2: str | None = None
     concepto3: str | None = None
     concepto4: str | None = None
-    numero_factura: str | None = None
-    email_destino: str | None = None
+    numero_factura: str = Field(..., min_length=1, max_length=30)
+    email_destino: EmailStr
 
-    @field_validator("numero_factura", mode="before")
+    @field_validator("numero_factura", "concepto1", mode="before")
     @classmethod
-    def factura_from_concepto(cls, v, info):
-        if v:
-            return str(v).strip()
-        return v
+    def strip_texto(cls, v):
+        if v is None:
+            return v
+        return str(v).strip()
 
 
 class LoteCreate(BaseModel):

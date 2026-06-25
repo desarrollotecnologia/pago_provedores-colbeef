@@ -7,8 +7,21 @@ import { trackAction } from "../telemetry/tracker";
 import InfoLote from "../components/InfoLote";
 import ProveedorSearch from "../components/ProveedorSearch";
 import StatusBadge from "../components/StatusBadge";
-import type { Lote, Proveedor } from "../types";
+import type { Lote, Pago, Proveedor } from "../types";
 import { formatMoney } from "../utils/format";
+import {
+  camposFaltantesPago,
+  mensajeCamposFaltantes,
+  pagoIncompleto,
+  type PagoFormData,
+} from "../utils/pagoValidation";
+
+const EMPTY_PAGO_FORM: PagoFormData = {
+  importe: "",
+  numero_factura: "",
+  concepto1: "",
+  email_destino: "",
+};
 
 type LoteAction = "archivo" | "correos" | "procesar" | "procesar-sin-correos";
 
@@ -32,13 +45,9 @@ export default function LoteDetail() {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingPago, setEditingPago] = useState<Pago | null>(null);
   const [selectedProv, setSelectedProv] = useState<Proveedor | null>(null);
-  const [pagoForm, setPagoForm] = useState({
-    importe: "",
-    numero_factura: "",
-    concepto1: "",
-    email_destino: "",
-  });
+  const [pagoForm, setPagoForm] = useState<PagoFormData>(EMPTY_PAGO_FORM);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [infoDialog, setInfoDialog] = useState<{ title: string; message: string } | null>(
     null
@@ -60,13 +69,34 @@ export default function LoteDetail() {
 
   const openAddModal = () => {
     setError("");
+    setEditingPago(null);
     setSelectedProv(null);
+    setPagoForm(EMPTY_PAGO_FORM);
     setShowAdd(true);
   };
 
   const closeAddModal = () => {
     setShowAdd(false);
     setSelectedProv(null);
+    setPagoForm(EMPTY_PAGO_FORM);
+    setError("");
+  };
+
+  const openEditModal = (pago: Pago) => {
+    setError("");
+    setShowAdd(false);
+    setEditingPago(pago);
+    setPagoForm({
+      importe: pago.importe,
+      numero_factura: pago.numero_factura ?? "",
+      concepto1: pago.concepto1 ?? "",
+      email_destino: pago.email_destino ?? "",
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingPago(null);
+    setPagoForm(EMPTY_PAGO_FORM);
     setError("");
   };
 
@@ -81,22 +111,49 @@ export default function LoteDetail() {
   const handleAddPago = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedProv) return;
+    const faltantes = camposFaltantesPago(pagoForm);
+    if (faltantes.length) {
+      setError(mensajeCamposFaltantes(faltantes));
+      return;
+    }
     setError("");
     try {
       await api.agregarPago(loteId, {
         proveedor_id: selectedProv.id,
         importe: parseFloat(pagoForm.importe),
-        numero_factura: pagoForm.numero_factura || null,
-        concepto1: pagoForm.concepto1 || null,
-        email_destino: pagoForm.email_destino || selectedProv.email,
+        numero_factura: pagoForm.numero_factura.trim(),
+        concepto1: pagoForm.concepto1.trim(),
+        email_destino: pagoForm.email_destino.trim(),
       });
-      setShowAdd(false);
-      setSelectedProv(null);
-      setPagoForm({ importe: "", numero_factura: "", concepto1: "", email_destino: "" });
+      closeAddModal();
       load();
       setMessage("Pago agregado al lote");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al agregar pago");
+    }
+  };
+
+  const handleEditPago = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingPago) return;
+    const faltantes = camposFaltantesPago(pagoForm);
+    if (faltantes.length) {
+      setError(mensajeCamposFaltantes(faltantes));
+      return;
+    }
+    setError("");
+    try {
+      await api.actualizarPago(editingPago.id, {
+        importe: parseFloat(pagoForm.importe),
+        numero_factura: pagoForm.numero_factura.trim(),
+        concepto1: pagoForm.concepto1.trim(),
+        email_destino: pagoForm.email_destino.trim(),
+      });
+      closeEditModal();
+      load();
+      setMessage("Pago actualizado");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Error al actualizar pago");
     }
   };
 
@@ -155,8 +212,33 @@ export default function LoteDetail() {
     await executeAction(action as LoteAction);
   };
 
+  const pagosActivos = lote?.pagos.filter((p) => p.estado !== "anulado") ?? [];
+  const pagosIncompletos = pagosActivos.filter(pagoIncompleto);
+
+  const validarAntesDeProcesar = (): boolean => {
+    if (!lote || pagosIncompletos.length === 0) return true;
+    const nombres = pagosIncompletos
+      .slice(0, 4)
+      .map((p) => p.razon_social)
+      .join(", ");
+    const extra =
+      pagosIncompletos.length > 4 ? ` y ${pagosIncompletos.length - 4} más` : "";
+    setInfoDialog({
+      title: "Pagos incompletos",
+      message: `${pagosIncompletos.length} pago(s) tienen datos faltantes (factura, concepto o email). Edítelos antes de procesar. Proveedores: ${nombres}${extra}.`,
+    });
+    return false;
+  };
+
   const runAction = (action: LoteAction) => {
     if (!lote) return;
+
+    if (
+      (action === "archivo" || action === "correos" || action === "procesar") &&
+      !validarAntesDeProcesar()
+    ) {
+      return;
+    }
 
     const yaEnviados = lote.estado === "correos_enviados";
     const pendientes = lote.pagos.filter(
@@ -213,10 +295,11 @@ export default function LoteDetail() {
   if (loading) return <p className="page-subtitle">Cargando lote…</p>;
   if (!lote) return <p className="alert alert-error">Lote no encontrado</p>;
 
-  const editable = lote.estado === "borrador";
+  const editable = lote.estado === "borrador" || lote.estado === "confirmado";
   const correosYaEnviados = lote.estado === "correos_enviados";
+  const hayPagosIncompletos = pagosIncompletos.length > 0;
   const puedeEnviarCorreos =
-    Boolean(lote.archivo_plano_nombre) && !correosYaEnviados && !processing;
+    Boolean(lote.archivo_plano_nombre) && !correosYaEnviados && !processing && !hayPagosIncompletos;
 
   return (
     <>
@@ -242,7 +325,12 @@ export default function LoteDetail() {
           <button
             type="button"
             className="btn btn-secondary"
-            disabled={processing || !lote.pagos.length}
+            disabled={processing || !lote.pagos.length || hayPagosIncompletos}
+            title={
+              hayPagosIncompletos
+                ? "Complete todos los pagos antes de generar el archivo"
+                : undefined
+            }
             onClick={() => runAction("archivo")}
           >
             Generar archivo
@@ -264,8 +352,14 @@ export default function LoteDetail() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={processing || !lote.pagos.length || correosYaEnviados}
-            title={correosYaEnviados ? "Los correos ya fueron enviados" : undefined}
+            disabled={processing || !lote.pagos.length || correosYaEnviados || hayPagosIncompletos}
+            title={
+              hayPagosIncompletos
+                ? "Complete todos los pagos antes de procesar"
+                : correosYaEnviados
+                  ? "Los correos ya fueron enviados"
+                  : undefined
+            }
             onClick={() => runAction("procesar")}
           >
             Procesar todo
@@ -283,6 +377,13 @@ export default function LoteDetail() {
         </div>
       )}
       {error && <div className="alert alert-error">{error}</div>}
+
+      {hayPagosIncompletos && editable && (
+        <div className="alert alert-warn">
+          {pagosIncompletos.length} pago(s) con datos incompletos. Use <strong>Editar</strong> para
+          completar factura, concepto y email antes de generar el archivo o enviar correos.
+        </div>
+      )}
 
       {editable && <InfoLote compact />}
 
@@ -323,32 +424,51 @@ export default function LoteDetail() {
                   <th>Cuenta</th>
                   <th>Importe</th>
                   <th>Factura</th>
+                  <th>Concepto</th>
+                  <th>Email</th>
                   <th>Estado</th>
                   {editable && <th></th>}
                 </tr>
               </thead>
               <tbody>
                 {lote.pagos.map((p) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className={pagoIncompleto(p) && p.estado !== "anulado" ? "row-warning" : ""}>
                     <td>{p.razon_social}</td>
                     <td>{p.identificacion}</td>
                     <td>{p.numero_cuenta}</td>
                     <td className="money">{formatMoney(p.importe)}</td>
-                    <td>{p.numero_factura ?? "—"}</td>
+                    <td>{p.numero_factura?.trim() || "—"}</td>
+                    <td>{p.concepto1?.trim() || "—"}</td>
+                    <td>{p.email_destino?.trim() || "—"}</td>
                     <td>
                       <StatusBadge estado={p.estado} />
+                      {pagoIncompleto(p) && p.estado !== "anulado" && (
+                        <span className="badge-incomplete" title="Datos incompletos">
+                          Incompleto
+                        </span>
+                      )}
                     </td>
-                    {editable && (
+                    {editable && p.estado !== "anulado" && (
                       <td>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDeletePago(p.id)}
-                        >
-                          Quitar
-                        </button>
+                        <div className="btn-group">
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => openEditModal(p)}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeletePago(p.id)}
+                          >
+                            Quitar
+                          </button>
+                        </div>
                       </td>
                     )}
+                    {editable && p.estado === "anulado" && <td></td>}
                   </tr>
                 ))}
               </tbody>
@@ -382,7 +502,7 @@ export default function LoteDetail() {
                 </div>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label>Importe</label>
+                    <label>Importe *</label>
                     <input
                       type="number"
                       step="0.01"
@@ -393,25 +513,28 @@ export default function LoteDetail() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>N° factura</label>
+                    <label>N° factura *</label>
                     <input
                       value={pagoForm.numero_factura}
                       onChange={(e) => setPagoForm({ ...pagoForm, numero_factura: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="form-group">
-                    <label>Concepto</label>
+                    <label>Concepto *</label>
                     <input
                       value={pagoForm.concepto1}
                       onChange={(e) => setPagoForm({ ...pagoForm, concepto1: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="form-group">
-                    <label>Email destino</label>
+                    <label>Email destino *</label>
                     <input
                       type="email"
                       value={pagoForm.email_destino}
                       onChange={(e) => setPagoForm({ ...pagoForm, email_destino: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
@@ -425,6 +548,66 @@ export default function LoteDetail() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {editingPago && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
+            <h3>Editar pago</h3>
+            {error && <div className="alert alert-error">{error}</div>}
+            <div className="alert alert-info">
+              <strong>{editingPago.razon_social}</strong> — {editingPago.identificacion}
+            </div>
+            <form onSubmit={handleEditPago}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Importe *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={pagoForm.importe}
+                    onChange={(e) => setPagoForm({ ...pagoForm, importe: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>N° factura *</label>
+                  <input
+                    value={pagoForm.numero_factura}
+                    onChange={(e) => setPagoForm({ ...pagoForm, numero_factura: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Concepto *</label>
+                  <input
+                    value={pagoForm.concepto1}
+                    onChange={(e) => setPagoForm({ ...pagoForm, concepto1: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email destino *</label>
+                  <input
+                    type="email"
+                    value={pagoForm.email_destino}
+                    onChange={(e) => setPagoForm({ ...pagoForm, email_destino: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="btn-group" style={{ marginTop: "1rem" }}>
+                <button type="submit" className="btn btn-primary">
+                  Guardar cambios
+                </button>
+                <button type="button" className="btn btn-outline" onClick={closeEditModal}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

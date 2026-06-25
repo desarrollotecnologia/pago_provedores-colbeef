@@ -690,6 +690,21 @@ tbody tr:hover td { background: rgba(243,250,246,0.8); }
 }
 .alert-info { background: var(--info-bg); color: var(--info-text); border: 1px solid #bfdbfe; }
 
+tr.row-warning td { background: #fffbeb; }
+.badge-incomplete {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.9rem; }
 
 .pagination {
