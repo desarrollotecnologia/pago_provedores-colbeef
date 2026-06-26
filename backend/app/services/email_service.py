@@ -17,6 +17,7 @@ from app.version import APP_VERSION
 from app.models import Banco, EnvioCorreo, LotePago, Pago
 from app.services.config_service import get_campo_factura, get_smtp_config
 from app.services.email_assets import inline_attachments
+from app.services.archivo_plano_service import identificacion_correo
 from app.services.email_templates import construir_correo, saludo_por_hora
 
 
@@ -49,9 +50,11 @@ def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[s
         monto_entero=monto_entero,
         monto_exacto=monto_exacto,
         razon_social=pago.razon_social or "",
-        referencia_16=pago.referencia_16 or "",
-        referencia_11=pago.referencia_11 or "",
+        identificacion=identificacion_correo(pago),
+        numero_cuenta=(pago.numero_cuenta or "").strip(),
         banco_nombre=banco_nombre,
+        banco_codigo=f"{pago.banco_codigo:04d}",
+        concepto=(pago.concepto1 or "").strip(),
     )
 
 

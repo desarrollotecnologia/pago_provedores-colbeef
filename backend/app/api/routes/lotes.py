@@ -35,9 +35,7 @@ def _generar_archivo_interno(db: Session, lote_id: int) -> ProcesarLoteResponse:
 
     pagos = svc.preparar_pagos_archivo(db, lote)
     ciudad = get_ciudad_default(db)
-    ruta, nombre = generar_archivo_plano(
-        pagos, concepto_general=lote.concepto_general, ciudad=ciudad
-    )
+    ruta, nombre = generar_archivo_plano(pagos, ciudad=ciudad)
     lote.archivo_plano_nombre = nombre
     lote.archivo_plano_ruta = str(ruta)
     lote.estado = "archivo_generado"

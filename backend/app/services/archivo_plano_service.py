@@ -30,6 +30,11 @@ def _campo_identificacion_referencia(pago: Pago) -> str:
     return id_num.zfill(16)[-16:]
 
 
+def identificacion_correo(pago: Pago) -> str:
+    """NIT/identificación legible en correos (sin ceros a la izquierda)."""
+    return pago.identificacion.strip()
+
+
 def _campo_identificacion(pago: Pago) -> str:
     """Alias usado en referencias de correo."""
     return _campo_identificacion_referencia(pago)
@@ -83,7 +88,12 @@ def _nombre_ciudad(pago: Pago, ciudad: str) -> tuple[str, str]:
     return n1[:40], n2[:40]
 
 
-def build_payment_line(pago: Pago, *, concepto: str, ciudad: str) -> str:
+def concepto_linea_pago(pago: Pago) -> str:
+    """Concepto que va al banco en cada línea del archivo plano (por pago, no del lote)."""
+    return (pago.concepto1 or "").strip()[:40]
+
+
+def build_payment_line(pago: Pago, *, concepto: str | None = None, ciudad: str) -> str:
     nombre_len = len(pago.razon_social.upper())
     extra = max(0, nombre_len - 36)
     line_length = LINE_LENGTH_BASE + extra
@@ -94,7 +104,9 @@ def build_payment_line(pago: Pago, *, concepto: str, ciudad: str) -> str:
     centavos = int(round(Decimal(pago.importe) * 100))
     parte2, parte3 = _parte_importe(_ruta_pago(pago), pago.numero_cuenta, centavos)
     n1, n2 = _nombre_ciudad(pago, ciudad)
-    concepto_field = (" " * concepto_pad + concepto.strip()[:40]).ljust(concepto_len)[:concepto_len]
+    concepto_field = (
+        " " * concepto_pad + (concepto or concepto_linea_pago(pago)).strip()[:40]
+    ).ljust(concepto_len)[:concepto_len]
 
     line = parte1 + parte2 + parte3 + n1 + n2 + concepto_field
     return line[:line_length].ljust(line_length)
@@ -103,7 +115,6 @@ def build_payment_line(pago: Pago, *, concepto: str, ciudad: str) -> str:
 def generar_archivo_plano(
     pagos: list[Pago],
     *,
-    concepto_general: str,
     ciudad: str | None = None,
     nombre_archivo: str | None = None,
 ) -> tuple[Path, str]:
@@ -115,7 +126,7 @@ def generar_archivo_plano(
         nombre_archivo = f"PAGOS_{date.today().strftime('%Y%m%d')}.txt"
 
     ruta = settings.output_dir / nombre_archivo
-    lineas = [build_payment_line(p, concepto=concepto_general, ciudad=ciudad) for p in pagos]
+    lineas = [build_payment_line(p, ciudad=ciudad) for p in pagos]
     contenido = "\r\n".join(lineas) + ("\r\n" if lineas else "")
     ruta.write_text(contenido, encoding="latin-1")
     return ruta, nombre_archivo

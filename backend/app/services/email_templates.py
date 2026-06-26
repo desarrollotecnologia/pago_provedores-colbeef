@@ -39,14 +39,19 @@ def construir_correo(
     monto_entero: str,
     monto_exacto: str,
     razon_social: str,
-    referencia_16: str,
-    referencia_11: str,
+    identificacion: str,
+    numero_cuenta: str,
     banco_nombre: str,
+    banco_codigo: str,
+    concepto: str,
 ) -> tuple[str, str]:
     """Devuelve (texto_plano, html)."""
+    concepto_txt = concepto.strip() or "Abono/Cargo cuenta"
+    concepto_html = escape(concepto_txt)
+    banco_corto = banco_codigo.zfill(4)[-4:]
     fila = (
-        f"{razon_social}\t{referencia_16}\t{referencia_11}\t"
-        f"{banco_nombre}\tAbono/Cargo cuenta\t{monto_exacto}"
+        f"{razon_social}\t{identificacion}\t{numero_cuenta}\t"
+        f"{concepto_txt}\t{banco_corto}\t{monto_exacto}"
     )
 
     texto = f"""{saludo}
@@ -60,10 +65,10 @@ mil gracias
 
     celdas = [
         ("Proveedor", escape(razon_social)),
-        ("Cuenta", escape(referencia_16)),
-        ("Ref.", escape(referencia_11)),
+        ("Identificación", escape(identificacion)),
+        ("Cuenta", escape(numero_cuenta)),
+        ("Concepto", concepto_html),
         ("Banco", escape(banco_nombre)),
-        ("Concepto", "Abono/Cargo cuenta"),
         ("Valor", escape(monto_exacto)),
     ]
     header_cells = "".join(

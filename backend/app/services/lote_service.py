@@ -250,6 +250,6 @@ def preparar_pagos_archivo(db: Session, lote: LotePago) -> list[Pago]:
     for pago in pagos:
         _asignar_referencias(pago)
         pago.estado = "incluido_archivo"
-        build_payment_line(pago, concepto=lote.concepto_general, ciudad="BOGOTA")
+        build_payment_line(pago, ciudad="BOGOTA")
 
     return pagos
