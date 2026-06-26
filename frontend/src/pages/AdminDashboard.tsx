@@ -5,7 +5,7 @@ import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
 import type { DashboardResponse } from "../types";
-import { formatMoney } from "../utils/format";
+import { formatMoney, todayISO } from "../utils/format";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -21,7 +21,8 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      const dash = await api.dashboard();
+      const hoy = todayISO();
+      const dash = await api.dashboard({ fecha_desde: hoy, fecha_hasta: hoy });
       setData(dash);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "No se pudo cargar el dashboard administrativo.";
@@ -59,7 +60,7 @@ export default function AdminDashboard() {
         <div>
           <p className="hero-eyebrow">Administración</p>
           <h1 className="page-title">Dashboard ejecutivo</h1>
-          <p className="page-subtitle hero-sub">Métricas y actividad reciente</p>
+          <p className="page-subtitle hero-sub">Métricas del día de hoy</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={load}>
           Actualizar
@@ -72,7 +73,7 @@ export default function AdminDashboard() {
         <div className="stat-card stat-card-accent">
           <div className="stat-card-header">
             <div>
-              <div className="label">Total pagado</div>
+              <div className="label">Total pagado hoy</div>
               <div className="value">{formatMoney(r?.importe_total ?? 0)}</div>
             </div>
             <span className="stat-card-icon" aria-hidden>
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-card-header">
             <div>
-              <div className="label">Proveedores activos</div>
+              <div className="label">Proveedores hoy</div>
               <div className="value">{r?.cantidad_proveedores ?? 0}</div>
             </div>
             <span className="stat-card-icon" aria-hidden>
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-card-header">
             <div>
-              <div className="label">Lotes del período</div>
+              <div className="label">Lotes de hoy</div>
               <div className="value">{r?.cantidad_lotes ?? 0}</div>
             </div>
             <span className="stat-card-icon" aria-hidden>
@@ -105,7 +106,7 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-card-header">
             <div>
-              <div className="label">Movimientos</div>
+              <div className="label">Pagos de hoy</div>
               <div className="value">{r?.cantidad_pagos ?? 0}</div>
             </div>
             <span className="stat-card-icon" aria-hidden>
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
       <div className="two-cols">
         <div className="card">
           <div className="card-header">
-            <h2>Top proveedores</h2>
+            <h2>Top proveedores hoy</h2>
             <Link to="/proveedores" className="btn btn-outline btn-sm">
               Ver todos
             </Link>
@@ -145,16 +146,21 @@ export default function AdminDashboard() {
               </table>
             </div>
           ) : (
-            <p className="empty-state">Sin pagos en el período.</p>
+            <p className="empty-state">Sin pagos hoy.</p>
           )}
         </div>
 
         <div className="card">
           <div className="card-header">
-            <h2>Lotes recientes</h2>
-            <Link to="/pagos" className="btn btn-primary btn-sm">
-              Nuevo lote
-            </Link>
+            <h2>Lotes de hoy</h2>
+            <div className="card-header-actions">
+              <Link to="/historial" className="btn btn-outline btn-sm">
+                Historial
+              </Link>
+              <Link to="/pagos" className="btn btn-primary btn-sm">
+                Nuevo lote
+              </Link>
+            </div>
           </div>
           {data?.ultimos_lotes.length ? (
             <div className="table-wrap">
@@ -184,7 +190,7 @@ export default function AdminDashboard() {
               </table>
             </div>
           ) : (
-            <p className="empty-state">No hay lotes creados.</p>
+            <p className="empty-state">No hay lotes registrados hoy.</p>
           )}
         </div>
       </div>

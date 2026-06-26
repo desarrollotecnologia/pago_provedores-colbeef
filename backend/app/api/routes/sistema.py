@@ -50,12 +50,11 @@ def email_firma_preview():
 def dashboard(
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
-    top_dias: int = Query(90, ge=7, le=365),
     db: Session = Depends(get_db),
     _: Usuario = Depends(require_admin),
 ):
     return dashboard_service.obtener_dashboard(
-        db, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, top_dias=top_dias
+        db, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta
     )
 
 

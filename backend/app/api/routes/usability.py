@@ -31,7 +31,7 @@ def registrar_evento(
         meta=payload.meta,
         timestamp=payload.timestamp,
     )
-    return UsabilityEventOut(id=evento.id)
+    return UsabilityEventOut(id=evento.id, message="Evento registrado")
 
 
 @router.get("/stats", response_model=UsabilityStatsResponse)

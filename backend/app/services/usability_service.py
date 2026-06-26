@@ -24,6 +24,15 @@ def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+def _normalize_timestamp(ts: datetime | None) -> datetime:
+    """Convierte a datetime naive UTC para MySQL."""
+    if ts is None:
+        return _now()
+    if ts.tzinfo is not None:
+        return ts.astimezone(UTC).replace(tzinfo=None)
+    return ts
+
+
 def _cleanup_old_events(db: Session) -> None:
     cutoff = _now() - timedelta(days=RETENTION_DAYS)
     db.execute(delete(EventoUsabilidad).where(EventoUsabilidad.timestamp < cutoff))
@@ -65,7 +74,7 @@ def registrar_evento(
         meta = {k: v for k, v in meta.items() if k not in ("password", "token", "secret")}
 
     evento = EventoUsabilidad(
-        timestamp=timestamp or _now(),
+        timestamp=_normalize_timestamp(timestamp),
         usuario=usuario_safe,
         session_id=session_safe,
         action=action[:40],
@@ -102,11 +111,7 @@ def obtener_estadisticas(db: Session, *, days: int = 30, solo_admin: bool = Fals
             stmt = stmt.where(EventoUsabilidad.usuario.in_(filtro_admin))
         return stmt
 
-    total_eventos = db.scalar(
-        select(func.count()).select_from(
-            _base_filter(select(EventoUsabilidad)).subquery()
-        )
-    ) or 0
+    total_eventos = db.scalar(_base_filter(select(func.count(EventoUsabilidad.id)))) or 0
 
     usuarios_unicos = db.scalar(
         _base_filter(select(func.count(func.distinct(EventoUsabilidad.usuario))))

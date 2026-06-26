@@ -115,6 +115,68 @@ export interface CuentaOrdenante {
   numero_cuenta: string;
 }
 
+export interface HistorialPagoItem {
+  id: number;
+  lote_id: number;
+  lote_fecha_operacion: string;
+  lote_concepto: string;
+  lote_estado: string;
+  proveedor_id: number;
+  razon_social: string;
+  identificacion: string;
+  importe: string;
+  numero_factura: string | null;
+  concepto1: string | null;
+  estado: string;
+  email_destino: string | null;
+}
+
+export interface HistorialPagosResponse {
+  resumen: {
+    fecha: string;
+    importe_total: string;
+    cantidad_pagos: number;
+  };
+  items: HistorialPagoItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface HistorialPagoDetalle {
+  id: number;
+  lote_id: number;
+  lote_fecha_operacion: string;
+  lote_fecha_limite: string | null;
+  lote_concepto: string;
+  lote_estado: string;
+  lote_importe_total: string;
+  lote_archivo: string | null;
+  proveedor_id: number;
+  identificacion: string;
+  tipo_identificacion: number;
+  digito_verificacion: number | null;
+  razon_social: string;
+  banco_codigo: number;
+  banco_descripcion: string | null;
+  tipo_cuenta: number;
+  numero_cuenta: string;
+  cod_oficina: string | null;
+  forma_pago: number;
+  importe: string;
+  fecha_limite: string | null;
+  concepto1: string | null;
+  concepto2: string | null;
+  concepto3: string | null;
+  concepto4: string | null;
+  numero_factura: string | null;
+  email_destino: string | null;
+  referencia_16: string | null;
+  referencia_11: string | null;
+  estado: string;
+}
+
 export interface DashboardResponse {
   resumen: {
     fecha_desde: string;

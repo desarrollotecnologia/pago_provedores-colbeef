@@ -393,6 +393,74 @@ button, input, select, textarea { font: inherit; }
 
 .card-header h2 { font-size: 1rem; font-weight: 700; color: var(--green-900); }
 
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.historial-filters { margin-bottom: 1.25rem; }
+
+.historial-search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.historial-search-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green-800);
+}
+
+.historial-search-form input {
+  min-width: 180px;
+}
+
+.historial-search-input { flex: 1; min-width: 220px; }
+
+.historial-summary { margin-bottom: 1.25rem; }
+
+.historial-fecha-value { font-size: 1.1rem !important; }
+
+.historial-detalle-modal { max-width: 720px; max-height: 90vh; overflow-y: auto; }
+
+.historial-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.historial-detalle-grid section h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  color: var(--green-800);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.detail-label { color: var(--text-muted); flex-shrink: 0; }
+.detail-value { text-align: right; font-weight: 500; color: var(--green-900); }
+
+@media (max-width: 640px) {
+  .historial-detalle-grid { grid-template-columns: 1fr; }
+  .historial-search-form { flex-direction: column; align-items: stretch; }
+}
+
 .pill {
   background: var(--green-100);
   color: var(--green-800);

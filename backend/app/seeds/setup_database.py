@@ -86,6 +86,19 @@ def _apply_schema_patches() -> None:
         )
         conn.commit()
 
+        if not conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'eventos_usabilidad'
+                """
+            )
+        ).scalar():
+            EventoUsabilidad.__table__.create(bind=conn)
+            conn.commit()
+            print("  Tabla eventos_usabilidad creada.")
+
 
 def create_resumen_view() -> None:
     with engine.connect() as conn:

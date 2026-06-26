@@ -6,8 +6,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 
-from app.api.routes import auth, catalogos, lotes, proveedores, sistema, usability
+from app.api.routes import auth, catalogos, historial, lotes, proveedores, sistema, usability
 from app.core.config import get_settings
+from app.core.database import engine
+from app.models import EventoUsabilidad
 from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION
 
 settings = get_settings()
@@ -32,7 +34,14 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(proveedores.router, prefix=API_PREFIX)
 app.include_router(catalogos.router, prefix=API_PREFIX)
 app.include_router(lotes.router, prefix=API_PREFIX)
+app.include_router(historial.router, prefix=API_PREFIX)
 app.include_router(usability.router, prefix=API_PREFIX)
+
+
+@app.on_event("startup")
+def ensure_usability_table() -> None:
+    """Garantiza la tabla de telemetría en instalaciones que no corrieron migrate."""
+    EventoUsabilidad.__table__.create(bind=engine, checkfirst=True)
 
 
 @app.get("/health")

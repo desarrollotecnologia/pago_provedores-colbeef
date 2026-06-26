@@ -1,5 +1,5 @@
 """Métricas y estadísticas del dashboard."""
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -14,12 +14,11 @@ def obtener_dashboard(
     *,
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
-    top_dias: int = 90,
 ) -> DashboardResponse:
     if not fecha_hasta:
         fecha_hasta = date.today()
     if not fecha_desde:
-        fecha_desde = fecha_hasta - timedelta(days=30)
+        fecha_desde = fecha_hasta
 
     filtros = [
         LotePago.fecha_operacion >= fecha_desde,
@@ -50,7 +49,6 @@ def obtener_dashboard(
         .where(*filtros)
     ) or 0
 
-    top_desde = fecha_hasta - timedelta(days=top_dias)
     top_rows = db.execute(
         select(
             Pago.proveedor_id,
@@ -61,9 +59,10 @@ def obtener_dashboard(
         .join(LotePago, Pago.lote_id == LotePago.id)
         .join(Proveedor, Proveedor.id == Pago.proveedor_id)
         .where(
-            LotePago.fecha_operacion >= top_desde,
+            LotePago.fecha_operacion >= fecha_desde,
             LotePago.fecha_operacion <= fecha_hasta,
             Pago.estado != "anulado",
+            LotePago.estado != "anulado",
         )
         .group_by(Pago.proveedor_id, Proveedor.razon_social)
         .order_by(func.sum(Pago.importe).desc())
@@ -72,8 +71,12 @@ def obtener_dashboard(
 
     ultimos = db.scalars(
         select(LotePago)
-        .where(LotePago.estado != "anulado")
-        .order_by(LotePago.fecha_operacion.desc())
+        .where(
+            LotePago.estado != "anulado",
+            LotePago.fecha_operacion >= fecha_desde,
+            LotePago.fecha_operacion <= fecha_hasta,
+        )
+        .order_by(LotePago.id.desc())
         .limit(5)
     ).all()
 

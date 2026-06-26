@@ -3,6 +3,8 @@ import type {
   CatalogoItem,
   CuentaOrdenante,
   DashboardResponse,
+  HistorialPagoDetalle,
+  HistorialPagosResponse,
   Lote,
   LoteListItem,
   Paginated,
@@ -33,18 +35,22 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestInit & { silentAuth?: boolean } = {}
+): Promise<T> {
+  const { silentAuth, ...fetchOptions } = options;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
+    ...(fetchOptions.headers as Record<string, string>),
   };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API}${path}`, { ...options, headers });
+  const res = await fetch(`${API}${path}`, { ...fetchOptions, headers });
   if (res.status === 401) {
     const isLogin = path === "/auth/login" || path.endsWith("/auth/login");
-    if (!isLogin) {
+    if (!isLogin && !silentAuth) {
       clearSession();
       onUnauthorized?.();
     }
@@ -87,6 +93,23 @@ export const api = {
     if (params?.fecha_hasta) q.set("fecha_hasta", params.fecha_hasta);
     const qs = q.toString();
     return request<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ""}`);
+  },
+
+  historialPagos(params: {
+    fecha: string;
+    page?: number;
+    page_size?: number;
+    q?: string;
+  }) {
+    const q = new URLSearchParams({ fecha: params.fecha });
+    if (params.page) q.set("page", String(params.page));
+    if (params.page_size) q.set("page_size", String(params.page_size));
+    if (params.q) q.set("q", params.q);
+    return request<HistorialPagosResponse>(`/historial/pagos?${q}`);
+  },
+
+  historialPagoDetalle(id: number) {
+    return request<HistorialPagoDetalle>(`/historial/pagos/${id}`);
   },
 
   smtpStatus() {
@@ -190,6 +213,21 @@ export const api = {
 
   usabilityStats(days = 30) {
     return request<UsabilityStats>(`/usability/stats?days=${days}`);
+  },
+
+  usabilityEvent(payload: {
+    session_id: string;
+    action: string;
+    module: string;
+    detail?: string;
+    page?: string;
+    meta?: Record<string, unknown>;
+  }) {
+    return request<{ id: number; message: string }>("/usability/event", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      silentAuth: true,
+    });
   },
 };
 

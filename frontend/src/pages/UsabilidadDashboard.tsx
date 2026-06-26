@@ -55,6 +55,8 @@ const MODULE_LABELS: Record<string, string> = {
   pagos: "Pagos",
   lote_detalle: "Detalle lote",
   configuracion: "Configuración",
+  historial_pagos: "Historial",
+  estadisticas_admin: "Estadísticas supervisor",
   usabilidad: "Usabilidad",
   auth: "Autenticación",
 };
