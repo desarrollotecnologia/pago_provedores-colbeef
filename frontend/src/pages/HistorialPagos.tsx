@@ -52,8 +52,8 @@ export default function HistorialPagos() {
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "No se pudo cargar el historial.";
       setError(
-        msg === "Not Found"
-          ? "El servicio de historial no está disponible. Reinicie el servidor backend e intente de nuevo."
+        msg === "Not Found" || msg === "Historial no disponible"
+          ? "El historial requiere reiniciar el servidor. Ejecute scripts\\start.bat y vuelva a consultar."
           : msg
       );
       setData(null);

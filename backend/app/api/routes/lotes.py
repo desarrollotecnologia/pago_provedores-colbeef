@@ -8,6 +8,7 @@ from app.api.deps import require_admin
 from app.core.database import get_db
 from app.models import Usuario
 from app.schemas.common import MessageResponse
+from app.schemas.historial import HistorialPagoDetalle, HistorialPagosResponse
 from app.schemas.lotes import (
     LoteCreate,
     LoteListItem,
@@ -19,7 +20,7 @@ from app.schemas.lotes import (
     PagoResponse,
     ProcesarLoteResponse,
 )
-from app.services import lote_service as svc
+from app.services import historial_service, lote_service as svc
 from app.services.archivo_plano_service import generar_archivo_plano
 from app.services.config_service import get_ciudad_default
 from app.services.email_service import enviar_correos_lote
@@ -85,6 +86,32 @@ def crear_lote(
     user: Usuario = Depends(require_admin),
 ):
     return svc.crear_lote(db, payload, user.id)
+
+
+@router.get("/historial/pagos", response_model=HistorialPagosResponse)
+def historial_pagos_por_fecha(
+    fecha: date = Query(..., description="Fecha de operación del lote (YYYY-MM-DD)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    q: str | None = Query(None, max_length=80),
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    return historial_service.buscar_pagos_por_fecha(
+        db, fecha=fecha, page=page, page_size=page_size, q=q
+    )
+
+
+@router.get("/historial/pagos/{pago_id}", response_model=HistorialPagoDetalle)
+def historial_pago_detalle(
+    pago_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    detalle = historial_service.obtener_pago_detalle(db, pago_id)
+    if not detalle:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Pago no encontrado")
+    return detalle
 
 
 @router.get("/{lote_id}", response_model=LoteResponse)

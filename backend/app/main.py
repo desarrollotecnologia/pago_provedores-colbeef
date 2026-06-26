@@ -45,12 +45,15 @@ def ensure_usability_table() -> None:
 
 @app.get("/health")
 def health_check():
+    routes = {getattr(r, "path", "") for r in app.routes}
+    historial_ok = "/api/historial/pagos" in routes or "/api/lotes/historial/pagos" in routes
     return {
         "status": "ok",
         "version": APP_VERSION,
         "email_template": EMAIL_TEMPLATE_VERSION,
         "env": settings.app_env,
         "app_url": settings.app_url,
+        "historial": historial_ok,
     }
 
 

@@ -95,7 +95,7 @@ export const api = {
     return request<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ""}`);
   },
 
-  historialPagos(params: {
+  async historialPagos(params: {
     fecha: string;
     page?: number;
     page_size?: number;
@@ -105,11 +105,38 @@ export const api = {
     if (params.page) q.set("page", String(params.page));
     if (params.page_size) q.set("page_size", String(params.page_size));
     if (params.q) q.set("q", params.q);
-    return request<HistorialPagosResponse>(`/historial/pagos?${q}`);
+    const qs = q.toString();
+    const paths = [`/historial/pagos?${qs}`, `/lotes/historial/pagos?${qs}`];
+    let lastError: ApiError | null = null;
+    for (const path of paths) {
+      try {
+        return await request<HistorialPagosResponse>(path);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          lastError = err;
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastError ?? new ApiError("Historial no disponible", 404);
   },
 
-  historialPagoDetalle(id: number) {
-    return request<HistorialPagoDetalle>(`/historial/pagos/${id}`);
+  async historialPagoDetalle(id: number) {
+    const paths = [`/historial/pagos/${id}`, `/lotes/historial/pagos/${id}`];
+    let lastError: ApiError | null = null;
+    for (const path of paths) {
+      try {
+        return await request<HistorialPagoDetalle>(path);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          lastError = err;
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastError ?? new ApiError("Pago no encontrado", 404);
   },
 
   smtpStatus() {
