@@ -1,11 +1,24 @@
 """Firma HTML Colbeef — réplica del diseño oficial (contacto + banner)."""
 from __future__ import annotations
 
-import base64
 from html import escape
 
 from app.core.config import get_settings
-from app.services.email_assets import BANNER_CID, banner_public_url, get_banner_path
+from app.services.email_assets import (
+    BANNER_CID,
+    ICON_EMAIL,
+    ICON_FACEBOOK,
+    ICON_INSTAGRAM,
+    ICON_LINKEDIN,
+    ICON_LOCATION,
+    ICON_PHONE,
+    ICON_WEB,
+    ICON_X,
+    EmailIcon,
+    banner_public_url,
+    get_banner_path,
+    get_icon_path,
+)
 
 # Colores oficiales Colbeef (firma corporativa)
 GREEN = "#2e933c"
@@ -15,6 +28,13 @@ GREY = "#555555"
 GREY_MUTED = "#666666"
 
 SIGNATURE_WIDTH = 580
+
+SOCIAL_LINKS: tuple[tuple[EmailIcon, str, str], ...] = (
+    (ICON_FACEBOOK, "https://www.facebook.com/colbeefoficial", "Facebook Colbeef"),
+    (ICON_LINKEDIN, "https://www.linkedin.com/company/colbeefoficial", "LinkedIn Colbeef"),
+    (ICON_X, "https://x.com/colbeefoficial", "X Colbeef"),
+    (ICON_INSTAGRAM, "https://www.instagram.com/colbeefoficial", "Instagram Colbeef"),
+)
 
 
 def _banner_img_src() -> str | None:
@@ -26,21 +46,16 @@ def _banner_img_src() -> str | None:
     return banner_public_url()
 
 
-def _svg_icon_data_uri(svg_body: str) -> str:
-    svg = (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" '
-        f'viewBox="0 0 24 24" fill="none" stroke="{GREEN}" stroke-width="2" '
-        f'stroke-linecap="round" stroke-linejoin="round">{svg_body}</svg>'
-    )
-    encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
-    return f"data:image/svg+xml;base64,{encoded}"
-
-
-def _icon_img(svg_body: str, alt: str) -> str:
-    src = _svg_icon_data_uri(svg_body)
+def _cid_img(icon: EmailIcon, alt: str, width: int, height: int) -> str:
+    if get_icon_path(icon):
+        return (
+            f'<img src="cid:{icon.cid}" alt="{escape(alt)}" width="{width}" height="{height}" '
+            f'style="display:block;border:0;outline:none;" />'
+        )
     return (
-        f'<img src="{src}" alt="{escape(alt)}" width="18" height="18" '
-        f'style="display:block;border:0;outline:none;" />'
+        f'<span style="display:inline-block;width:{width}px;height:{height}px;'
+        f"background:{GREEN};border-radius:6px;color:#fff;font-size:{max(10, width // 3)}px;"
+        f'line-height:{height}px;text-align:center;font-family:Arial,sans-serif;">•</span>'
     )
 
 
@@ -58,21 +73,20 @@ Web: {s.email_firma_web}
 {sep}"""
 
 
-def _icono_social(href: str, label: str, font_size: str = "14px") -> str:
+def _icono_social(icon: EmailIcon, href: str, alt: str) -> str:
+    img = _cid_img(icon, alt, 32, 32)
     return (
         f'<a href="{href}" target="_blank" rel="noopener noreferrer" '
-        f'style="display:inline-block;width:32px;height:32px;background:{GREEN};'
-        f"color:#ffffff;text-align:center;line-height:32px;border-radius:8px;"
-        f'text-decoration:none;font-weight:bold;font-size:{font_size};'
-        f'font-family:Arial,Helvetica,sans-serif;margin-right:6px;">{label}</a>'
+        f'style="display:inline-block;margin-right:6px;text-decoration:none;line-height:0;">'
+        f"{img}</a>"
     )
 
 
-def _fila_contacto(icon_svg: str, icon_alt: str, contenido: str) -> str:
+def _fila_contacto(icon: EmailIcon, icon_alt: str, contenido: str) -> str:
     return f"""
     <tr>
-      <td style="padding:0 10px 8px 0;vertical-align:top;width:20px;line-height:0;">
-        {_icon_img(icon_svg, icon_alt)}
+      <td style="padding:0 10px 8px 0;vertical-align:middle;width:22px;line-height:0;">
+        {_cid_img(icon, icon_alt, 18, 18)}
       </td>
       <td style="padding:0 0 8px;font-size:12px;color:{GREY};font-family:Arial,Helvetica,sans-serif;line-height:1.5;">
         {contenido}
@@ -180,47 +194,22 @@ def firma_html() -> str:
     web_href = web.replace("https://", "").replace("http://", "")
     tel_href = telefono.replace(" ", "")
 
-    icon_phone = (
-        '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 '
-        '19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 '
-        '12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 '
-        '2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
-    )
-    icon_mail = (
-        '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>'
-        '<polyline points="22,6 12,13 2,6"/>'
-    )
-    icon_pin = (
-        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
-        '<circle cx="12" cy="10" r="3"/>'
-    )
-    icon_globe = (
-        '<circle cx="12" cy="12" r="10"/>'
-        '<line x1="2" y1="12" x2="22" y2="12"/>'
-        '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
-    )
-
-    redes = (
-        _icono_social("https://www.facebook.com/colbeef", "f")
-        + _icono_social("https://www.linkedin.com/company/colbeef", "in", "11px")
-        + _icono_social("https://x.com/colbeef", "𝕏", "13px")
-        + _icono_social("https://www.instagram.com/colbeef", "◎", "15px")
-    )
+    redes = "".join(_icono_social(icon, href, alt) for icon, href, alt in SOCIAL_LINKS)
 
     contacto = (
         _fila_contacto(
-            icon_phone,
+            ICON_PHONE,
             "Teléfono",
             f'<a href="tel:{tel_href}" style="color:{GREY};text-decoration:underline;">{telefono}</a>',
         )
         + _fila_contacto(
-            icon_mail,
+            ICON_EMAIL,
             "Email",
             f'<a href="mailto:{email}" style="color:{GREY};text-decoration:underline;">{email}</a>',
         )
-        + _fila_contacto(icon_pin, "Dirección", direccion)
+        + _fila_contacto(ICON_LOCATION, "Dirección", direccion)
         + _fila_contacto(
-            icon_globe,
+            ICON_WEB,
             "Web",
             f'<a href="https://{web_href}" style="color:{GREY};text-decoration:underline;">{web}</a>',
         )

@@ -29,6 +29,12 @@ if not exist "frontend\public" mkdir "frontend\public"
 copy /Y "%SRC%" "backend\app\static\email-banner-colbeef.png"
 copy /Y "%SRC%" "frontend\public\email-banner-colbeef.png"
 
+if exist "backend\app\static\email-icons" (
+  echo Iconos de firma: backend\app\static\email-icons\
+) else (
+  echo AVISO: Falta la carpeta backend\app\static\email-icons con los iconos PNG de contacto y redes.
+)
+
 echo.
 echo Banner instalado en:
 echo   backend\app\static\email-banner-colbeef.png

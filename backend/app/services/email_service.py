@@ -13,11 +13,10 @@ SMTP_POLICY = policy.SMTP
 
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.version import APP_VERSION
 from app.models import Banco, EnvioCorreo, LotePago, Pago
 from app.services.config_service import get_campo_factura, get_smtp_config
-from app.services.email_assets import BANNER_CID, get_banner_path
+from app.services.email_assets import inline_attachments
 from app.services.email_templates import construir_correo, saludo_por_hora
 
 
@@ -57,23 +56,23 @@ def _cuerpo_correo(pago: Pago, banco_nombre: str, campo_factura: str) -> tuple[s
 
 
 def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_plano: str, html: str):
-    """Correo HTML (con texto plano de respaldo) y banner inline si existe."""
-    banner_path = get_banner_path()
-    use_cid = banner_path and not get_settings().email_firma_banner_url
+    """Correo HTML (con texto plano de respaldo) e imágenes inline (banner + iconos)."""
+    attachments = inline_attachments()
 
     plain = MIMEText(texto_plano, "plain", "utf-8", policy=SMTP_POLICY)
     html_part = MIMEText(html, "html", "utf-8", policy=SMTP_POLICY)
 
-    if use_cid and banner_path:
+    if attachments:
         msg = MIMEMultipart("related", policy=SMTP_POLICY)
         alt = MIMEMultipart("alternative", policy=SMTP_POLICY)
         alt.attach(plain)
         alt.attach(html_part)
         msg.attach(alt)
-        img = MIMEImage(banner_path.read_bytes(), _subtype="png", policy=SMTP_POLICY)
-        img.add_header("Content-ID", f"<{BANNER_CID}>")
-        img.add_header("Content-Disposition", "inline", filename="email-banner-colbeef.png")
-        msg.attach(img)
+        for cid, path in attachments:
+            img = MIMEImage(path.read_bytes(), _subtype="png", policy=SMTP_POLICY)
+            img.add_header("Content-ID", f"<{cid}>")
+            img.add_header("Content-Disposition", "inline", filename=path.name)
+            msg.attach(img)
     else:
         msg = MIMEMultipart("alternative", policy=SMTP_POLICY)
         msg.attach(plain)
