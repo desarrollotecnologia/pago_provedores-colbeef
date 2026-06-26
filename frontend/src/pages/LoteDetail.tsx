@@ -23,7 +23,7 @@ const EMPTY_PAGO_FORM: PagoFormData = {
   email_destino: "",
 };
 
-type LoteAction = "archivo" | "correos" | "procesar" | "procesar-sin-correos";
+type LoteAction = "archivo" | "correos" | "procesar" | "procesar-sin-correos" | "finalizar";
 
 interface ConfirmState {
   title: string;
@@ -49,6 +49,7 @@ export default function LoteDetail() {
   const [selectedProv, setSelectedProv] = useState<Proveedor | null>(null);
   const [pagoForm, setPagoForm] = useState<PagoFormData>(EMPTY_PAGO_FORM);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [infoDialog, setInfoDialog] = useState<{ title: string; message: string } | null>(
     null
   );
@@ -170,6 +171,20 @@ export default function LoteDetail() {
     });
   };
 
+  const downloadArchivo = async (nombre?: string) => {
+    const token = getToken();
+    const url = api.descargarArchivoUrl(loteId);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error("No se pudo descargar el archivo plano");
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    const objectUrl = URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = nombre ?? lote?.archivo_plano_nombre ?? "pagos.txt";
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const executeAction = async (action: LoteAction) => {
     if (!lote) return;
     setProcessing(true);
@@ -179,13 +194,23 @@ export default function LoteDetail() {
       let res;
       if (action === "archivo") res = await api.generarArchivo(loteId);
       else if (action === "correos") res = await api.enviarCorreos(loteId);
-      else if (action === "procesar") res = await api.procesarLote(loteId, true);
+      else if (action === "finalizar" || action === "procesar")
+        res = await api.procesarLote(loteId, true);
       else res = await api.procesarLote(loteId, false);
-      setMessage(res.mensaje);
-      load();
+
+      if (action === "finalizar") {
+        await downloadArchivo(res.archivo);
+        setMessage(`${res.mensaje} — Archivo descargado.`);
+      } else {
+        setMessage(res.mensaje);
+      }
+
+      await load();
+
       if (action === "archivo") trackAction("pagos", `Archivo generado lote #${loteId}`);
       else if (action === "correos") trackAction("pagos", `Correos enviados lote #${loteId}`);
-      else if (action === "procesar") trackAction("pagos", `Procesar todo lote #${loteId}`);
+      else if (action === "finalizar" || action === "procesar")
+        trackAction("pagos", `Lote finalizado #${loteId}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error en la operación");
     } finally {
@@ -234,22 +259,26 @@ export default function LoteDetail() {
     if (!lote) return;
 
     if (
-      (action === "archivo" || action === "correos" || action === "procesar") &&
+      (action === "archivo" ||
+        action === "correos" ||
+        action === "procesar" ||
+        action === "finalizar") &&
       !validarAntesDeProcesar()
     ) {
       return;
     }
 
-    const yaEnviados = lote.estado === "correos_enviados";
+    const yaEnviados =
+      lote.estado === "correos_enviados" || lote.estado === "completado";
     const pendientes = lote.pagos.filter(
       (p) => p.estado !== "anulado" && p.estado !== "correo_enviado"
     ).length;
 
-    if (action === "correos" || action === "procesar") {
+    if (action === "correos" || action === "procesar" || action === "finalizar") {
       if (yaEnviados) {
         setInfoDialog({
-          title: "Correos ya enviados",
-          message: "Los correos de este lote ya fueron enviados. No se permiten reenvíos.",
+          title: "Lote ya finalizado",
+          message: "Este lote ya fue procesado y los correos fueron enviados.",
         });
         return;
       }
@@ -257,6 +286,19 @@ export default function LoteDetail() {
         setInfoDialog({
           title: "Sin correos pendientes",
           message: "No hay correos pendientes por enviar en este lote.",
+        });
+        return;
+      }
+
+      if (action === "finalizar") {
+        setConfirmState({
+          title: "¿Finalizar lote?",
+          message: `Se generará el archivo plano bancario, se descargará el TXT a su equipo y se enviarán ${pendientes} correo(s) a los proveedores.`,
+          detail: "Solo se permite un envío por lote. Esta acción no se puede deshacer.",
+          confirmLabel: "Sí, finalizar",
+          variant: "primary",
+          icon: "mail",
+          action,
         });
         return;
       }
@@ -279,25 +321,15 @@ export default function LoteDetail() {
     void executeAction(action);
   };
 
-  const downloadArchivo = () => {
-    const token = getToken();
-    const url = api.descargarArchivoUrl(loteId);
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.blob())
-      .then((blob) => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = lote?.archivo_plano_nombre ?? "pagos.txt";
-        a.click();
-      });
-  };
-
   if (loading) return <p className="page-subtitle">Cargando lote…</p>;
   if (!lote) return <p className="alert alert-error">Lote no encontrado</p>;
 
   const editable = lote.estado === "borrador" || lote.estado === "confirmado";
-  const correosYaEnviados = lote.estado === "correos_enviados";
+  const correosYaEnviados =
+    lote.estado === "correos_enviados" || lote.estado === "completado";
   const hayPagosIncompletos = pagosIncompletos.length > 0;
+  const puedeFinalizar =
+    !correosYaEnviados && pagosActivos.length > 0 && !hayPagosIncompletos && !processing;
   const puedeEnviarCorreos =
     Boolean(lote.archivo_plano_nombre) && !correosYaEnviados && !processing && !hayPagosIncompletos;
 
@@ -316,56 +348,85 @@ export default function LoteDetail() {
             {lote.concepto_general} — <StatusBadge estado={lote.estado} />
           </p>
         </div>
-        <div className="btn-group">
+        <div className="lote-actions">
           {editable && (
-            <button type="button" className="btn btn-primary" onClick={openAddModal}>
+            <button type="button" className="btn btn-outline" onClick={openAddModal}>
               + Agregar pago
             </button>
           )}
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={processing || !lote.pagos.length || hayPagosIncompletos}
-            title={
-              hayPagosIncompletos
-                ? "Complete todos los pagos antes de generar el archivo"
-                : undefined
-            }
-            onClick={() => runAction("archivo")}
-          >
-            Generar archivo
-          </button>
-          {lote.archivo_plano_nombre && (
-            <button type="button" className="btn btn-outline" onClick={downloadArchivo}>
-              Descargar TXT
+
+          {!correosYaEnviados ? (
+            <button
+              type="button"
+              className="btn btn-primary btn-lg lote-btn-finalizar"
+              disabled={!puedeFinalizar}
+              title={
+                hayPagosIncompletos
+                  ? "Complete todos los pagos antes de finalizar"
+                  : pagosActivos.length === 0
+                    ? "Agregue al menos un pago"
+                    : "Genera archivo, descarga TXT y envía correos"
+              }
+              onClick={() => runAction("finalizar")}
+            >
+              {processing ? "Finalizando…" : "Finalizar lote"}
+            </button>
+          ) : (
+            lote.archivo_plano_nombre && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void downloadArchivo()}
+              >
+                Descargar TXT
+              </button>
+            )
+          )}
+
+          {!correosYaEnviados && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              {showAdvanced ? "Ocultar opciones ▴" : "Más opciones ▾"}
             </button>
           )}
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={!puedeEnviarCorreos}
-            title={correosYaEnviados ? "Los correos ya fueron enviados" : undefined}
-            onClick={() => runAction("correos")}
-          >
-            {correosYaEnviados ? "Correos enviados" : "Enviar correos"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={processing || !lote.pagos.length || correosYaEnviados || hayPagosIncompletos}
-            title={
-              hayPagosIncompletos
-                ? "Complete todos los pagos antes de procesar"
-                : correosYaEnviados
-                  ? "Los correos ya fueron enviados"
-                  : undefined
-            }
-            onClick={() => runAction("procesar")}
-          >
-            Procesar todo
-          </button>
         </div>
       </div>
+
+      {showAdvanced && !correosYaEnviados && (
+        <div className="lote-advanced-actions card">
+          <p className="lote-advanced-label">Pasos individuales (solo si lo necesita)</p>
+          <div className="btn-group">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={processing || !pagosActivos.length || hayPagosIncompletos}
+              onClick={() => runAction("archivo")}
+            >
+              Solo generar archivo
+            </button>
+            {lote.archivo_plano_nombre && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => void downloadArchivo()}
+              >
+                Descargar TXT
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={!puedeEnviarCorreos}
+              onClick={() => runAction("correos")}
+            >
+              Solo enviar correos
+            </button>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div

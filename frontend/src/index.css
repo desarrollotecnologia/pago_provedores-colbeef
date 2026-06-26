@@ -1036,6 +1036,35 @@ button, input, select, textarea { font: inherit; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
+.lote-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.lote-btn-finalizar {
+  min-width: 11rem;
+  font-weight: 700;
+}
+
+.lote-advanced-actions {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  background: var(--green-50);
+  border-style: dashed;
+}
+
+.lote-advanced-label {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 /* ── Tables ── */
 .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
 
