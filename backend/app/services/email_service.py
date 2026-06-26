@@ -82,7 +82,6 @@ def _construir_mensaje(smtp_cfg: dict, destinatario: str, asunto: str, texto_pla
     msg["From"] = f"{smtp_cfg['from_name']} <{smtp_cfg['from_email']}>"
     msg["To"] = destinatario
     msg["Subject"] = asunto
-    msg["MIME-Version"] = "1.0"
     msg["X-Mailer"] = f"PagoProveedores-Colbeef/{APP_VERSION}"
 
     return msg
