@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.timezone import today_colombia
 from app.models import LotePago, Pago, Proveedor
 from app.schemas.dashboard import DashboardResumen, DashboardResponse, TopProveedor
 
@@ -16,7 +17,7 @@ def obtener_dashboard(
     fecha_hasta: date | None = None,
 ) -> DashboardResponse:
     if not fecha_hasta:
-        fecha_hasta = date.today()
+        fecha_hasta = today_colombia()
     if not fecha_desde:
         fecha_desde = fecha_hasta
 
@@ -44,9 +45,11 @@ def obtener_dashboard(
     ) or 0
 
     cantidad_lotes = db.scalar(
-        select(func.count(func.distinct(LotePago.id)))
-        .join(Pago, Pago.lote_id == LotePago.id)
-        .where(*filtros)
+        select(func.count(LotePago.id)).where(
+            LotePago.fecha_operacion >= fecha_desde,
+            LotePago.fecha_operacion <= fecha_hasta,
+            LotePago.estado != "anulado",
+        )
     ) or 0
 
     top_rows = db.execute(

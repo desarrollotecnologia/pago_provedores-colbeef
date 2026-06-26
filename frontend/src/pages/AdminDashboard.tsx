@@ -1,17 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
 import type { DashboardResponse } from "../types";
-import { formatMoney, todayISO } from "../utils/format";
+import { formatMoney, isSameDayISO, todayISO } from "../utils/format";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const hoy = todayISO();
 
   useEffect(() => {
     track("module_open", "dashboard_admin", "Dashboard ejecutivo");
@@ -21,7 +22,6 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      const hoy = todayISO();
       const dash = await api.dashboard({ fecha_desde: hoy, fecha_hasta: hoy });
       setData(dash);
     } catch (err) {
@@ -30,15 +30,48 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hoy]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  if (loading) return <p className="page-subtitle">Cargando dashboard…</p>;
-
   const r = data?.resumen;
+
+  const lotesHoy = useMemo(
+    () => data?.ultimos_lotes.filter((l) => isSameDayISO(l.fecha_operacion, hoy)) ?? [],
+    [data?.ultimos_lotes, hoy]
+  );
+
+  const proveedoresHoy = useMemo(() => {
+    if (!r || (r.cantidad_pagos ?? 0) === 0) return [];
+    return data?.top_proveedores ?? [];
+  }, [data?.top_proveedores, r]);
+
+  const sinActividadHoy =
+    !loading &&
+    (r?.cantidad_pagos ?? 0) === 0 &&
+    (r?.cantidad_lotes ?? 0) === 0 &&
+    lotesHoy.length === 0;
+
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <div className="skeleton skeleton-welcome animate-pulse-soft" />
+        <div className="skeleton skeleton-title animate-pulse-soft animate-delay-1" />
+        <div className="cards-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="skeleton skeleton-stat animate-pulse-soft"
+              style={{ animationDelay: `${0.1 + i * 0.08}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const primerNombre = user?.nombre_completo?.split(" ")[0] ?? user?.username ?? "Usuario";
   const fechaHoy = new Date().toLocaleDateString("es-CO", {
     weekday: "long",
@@ -48,7 +81,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="dashboard-welcome">
+      <div className="dashboard-welcome animate-fade-up">
         <div>
           <h2>Hola, {primerNombre}</h2>
           <p>{fechaHoy}</p>
@@ -56,11 +89,13 @@ export default function AdminDashboard() {
         <span className="dashboard-welcome-badge">Tesorería Colbeef</span>
       </div>
 
-      <div className="page-hero">
+      <div className="page-hero animate-fade-up animate-delay-1">
         <div>
           <p className="hero-eyebrow">Administración</p>
           <h1 className="page-title">Dashboard ejecutivo</h1>
-          <p className="page-subtitle hero-sub">Métricas del día de hoy</p>
+          <p className="page-subtitle hero-sub">
+            Solo actividad de hoy — el historial conserva los días anteriores
+          </p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={load}>
           Actualizar
@@ -69,7 +104,14 @@ export default function AdminDashboard() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      <div className="cards-grid">
+      {sinActividadHoy && (
+        <div className="alert alert-info dashboard-day-empty animate-scale-in">
+          Hoy aún no hay pagos ni lotes registrados. Los días anteriores están disponibles en{" "}
+          <Link to="/historial">Historial</Link>.
+        </div>
+      )}
+
+      <div className="cards-grid animate-stagger">
         <div className="stat-card stat-card-accent">
           <div className="stat-card-header">
             <div>
@@ -116,7 +158,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="two-cols">
+      <div className="two-cols animate-fade-up animate-delay-3">
         <div className="card">
           <div className="card-header">
             <h2>Top proveedores hoy</h2>
@@ -124,7 +166,7 @@ export default function AdminDashboard() {
               Ver todos
             </Link>
           </div>
-          {data?.top_proveedores.length ? (
+          {proveedoresHoy.length ? (
             <div className="table-wrap">
               <table>
                 <thead>
@@ -135,7 +177,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.top_proveedores.slice(0, 8).map((p) => (
+                  {proveedoresHoy.slice(0, 8).map((p) => (
                     <tr key={p.proveedor_id}>
                       <td>{p.razon_social}</td>
                       <td className="money">{formatMoney(p.total_pagado)}</td>
@@ -162,7 +204,7 @@ export default function AdminDashboard() {
               </Link>
             </div>
           </div>
-          {data?.ultimos_lotes.length ? (
+          {lotesHoy.length ? (
             <div className="table-wrap">
               <table>
                 <thead>
@@ -174,7 +216,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.ultimos_lotes.map((l) => (
+                  {lotesHoy.map((l) => (
                     <tr key={l.id}>
                       <td>
                         <Link to={`/pagos/${l.id}`}>#{l.id}</Link>

@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,9 +10,9 @@ from app.core.config import get_settings
 from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION, UI_VERSION
 from app.core.database import get_db
 from app.models import CuentaOrdenante, Usuario
-from app.schemas.common import MessageResponse
 from app.schemas.dashboard import DashboardResponse, PublicConfig
-from app.services import dashboard_service
+from app.schemas.historial import HistorialPagoDetalle, HistorialPagosResponse
+from app.services import dashboard_service, historial_service
 
 router = APIRouter(tags=["Sistema"])
 
@@ -77,3 +77,29 @@ def cuentas_ordenantes(
         select(CuentaOrdenante).where(CuentaOrdenante.activa.is_(True))
     ).all()
     return [{"id": r.id, "alias": r.alias, "numero_cuenta": r.numero_cuenta} for r in rows]
+
+
+@router.get("/historial/pagos", response_model=HistorialPagosResponse)
+def historial_pagos(
+    fecha: date = Query(..., description="Fecha de operación del lote (YYYY-MM-DD)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    q: str | None = Query(None, max_length=80),
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    return historial_service.buscar_pagos_por_fecha(
+        db, fecha=fecha, page=page, page_size=page_size, q=q
+    )
+
+
+@router.get("/historial/pagos/{pago_id}", response_model=HistorialPagoDetalle)
+def historial_pago_detalle(
+    pago_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    detalle = historial_service.obtener_pago_detalle(db, pago_id)
+    if not detalle:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Pago no encontrado")
+    return detalle

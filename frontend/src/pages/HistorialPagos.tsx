@@ -4,7 +4,7 @@ import { ApiError, api } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 import { track } from "../telemetry/tracker";
 import type { CatalogoItem, HistorialPagoDetalle, HistorialPagosResponse } from "../types";
-import { formatDate, formatMoney, todayISO } from "../utils/format";
+import { formatDate, formatMoney, offsetDateISO, todayISO } from "../utils/format";
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -16,12 +16,13 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 export default function HistorialPagos() {
-  const [fecha, setFecha] = useState(todayISO());
+  const [fechaInput, setFechaInput] = useState(todayISO());
   const [busqueda, setBusqueda] = useState("");
+  const [fechaConsulta, setFechaConsulta] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<HistorialPagosResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [detalle, setDetalle] = useState<HistorialPagoDetalle | null>(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
@@ -37,28 +38,45 @@ export default function HistorialPagos() {
   }, []);
 
   const load = useCallback(async () => {
+    if (!fechaConsulta) return;
     setLoading(true);
     setError("");
     try {
-      const res = await api.historialPagos({ fecha, page, page_size: 50, q: q || undefined });
+      const res = await api.historialPagos({
+        fecha: fechaConsulta,
+        page,
+        page_size: 50,
+        q: q || undefined,
+      });
       setData(res);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "No se pudo cargar el historial.";
-      setError(msg);
+      setError(
+        msg === "Not Found"
+          ? "El servicio de historial no está disponible. Reinicie el servidor backend e intente de nuevo."
+          : msg
+      );
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [fecha, page, q]);
+  }, [fechaConsulta, page, q]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const ejecutarBusqueda = (fecha: string, texto = busqueda) => {
+    setPage(1);
+    setQ(texto.trim());
+    setFechaConsulta(fecha);
+    setData(null);
+    setError("");
+  };
+
   const handleBuscar = (e: FormEvent) => {
     e.preventDefault();
-    setPage(1);
-    setQ(busqueda.trim());
+    ejecutarBusqueda(fechaInput);
   };
 
   const abrirDetalle = async (pagoId: number) => {
@@ -78,144 +96,205 @@ export default function HistorialPagos() {
     lista.find((t) => t.codigo === codigo)?.descripcion ?? String(codigo);
 
   const resumen = data?.resumen;
+  const fechaMostrada = fechaConsulta ?? fechaInput;
 
   return (
     <>
-      <div className="page-hero">
+      <div className="page-hero animate-fade-up">
         <div>
-          <p className="hero-eyebrow">Consulta</p>
+          <p className="hero-eyebrow">Consulta histórica</p>
           <h1 className="page-title">Historial de pagos</h1>
           <p className="page-subtitle hero-sub">
-            Busque todos los pagos realizados en la fecha que elija
+            El dashboard solo muestra el día actual. Aquí puede consultar cualquier fecha anterior.
           </p>
         </div>
       </div>
 
-      <div className="card historial-filters">
-        <form className="historial-search-form" onSubmit={handleBuscar}>
-          <label>
-            <span>Fecha de operación</span>
-            <input
-              type="date"
-              value={fecha}
-              onChange={(e) => {
-                setFecha(e.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-          <label className="historial-search-input">
-            <span>Proveedor, NIT o factura</span>
-            <input
-              type="search"
-              placeholder="Opcional"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </label>
-          <button type="submit" className="btn btn-primary">
-            Buscar
-          </button>
+      <section className="historial-search-panel animate-fade-up animate-delay-1">
+        <div className="historial-search-panel-head">
+          <div>
+            <h2>Buscar por fecha</h2>
+            <p>Seleccione el día de operación y pulse consultar para ver todos los pagos.</p>
+          </div>
+          <span className="historial-search-panel-badge animate-badge-glow">Archivo histórico</span>
+        </div>
+
+        <form className="historial-search-panel-form" onSubmit={handleBuscar}>
+          <div className="historial-search-fields">
+            <label className="historial-field historial-field-date">
+              <span>Fecha de operación</span>
+              <input
+                type="date"
+                value={fechaInput}
+                onChange={(e) => setFechaInput(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="historial-field historial-field-text">
+              <span>Proveedor, NIT o factura</span>
+              <input
+                type="search"
+                placeholder="Filtro opcional…"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="historial-search-actions">
+            <div className="historial-quick-dates">
+              <span className="historial-quick-label">Acceso rápido</span>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  const hoy = todayISO();
+                  setFechaInput(hoy);
+                  ejecutarBusqueda(hoy);
+                }}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  const ayer = offsetDateISO(-1);
+                  setFechaInput(ayer);
+                  ejecutarBusqueda(ayer);
+                }}
+              >
+                Ayer
+              </button>
+            </div>
+            <button type="submit" className="btn btn-primary btn-lg historial-search-btn animate-btn-shine">
+              Consultar pagos
+            </button>
+          </div>
         </form>
-      </div>
+      </section>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="alert alert-error animate-shake">{error}</div>}
 
-      <div className="cards-grid historial-summary">
-        <div className="stat-card stat-card-accent">
-          <div className="label">Total del día</div>
-          <div className="value">{formatMoney(resumen?.importe_total ?? 0)}</div>
+      {!fechaConsulta ? (
+        <div className="card historial-empty-prompt animate-scale-in animate-delay-2">
+          <p className="historial-empty-icon animate-icon-float" aria-hidden>
+            ◷
+          </p>
+          <h3>Consulte un día del historial</h3>
+          <p>
+            Elija una fecha arriba y pulse <strong>Consultar pagos</strong> para ver los movimientos
+            de ese día.
+          </p>
         </div>
-        <div className="stat-card">
-          <div className="label">Pagos encontrados</div>
-          <div className="value">{resumen?.cantidad_pagos ?? 0}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Fecha consultada</div>
-          <div className="value historial-fecha-value">{formatDate(fecha)}</div>
-        </div>
-      </div>
+      ) : (
+        <div key={`${fechaConsulta}-${q}`} className="historial-results animate-fade-up">
+          <div className="cards-grid historial-summary animate-stagger">
+            <div className="stat-card stat-card-accent">
+              <div className="label">Total del día</div>
+              <div className="value">{formatMoney(resumen?.importe_total ?? 0)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">Pagos encontrados</div>
+              <div className="value">{resumen?.cantidad_pagos ?? 0}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">Fecha consultada</div>
+              <div className="value historial-fecha-value">{formatDate(fechaMostrada)}</div>
+            </div>
+          </div>
 
-      <div className="card">
-        <div className="card-header">
-          <h2>Pagos del {formatDate(fecha)}</h2>
-        </div>
-
-        {loading ? (
-          <p className="page-subtitle">Cargando pagos…</p>
-        ) : data?.items.length ? (
-          <>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Lote</th>
-                    <th>Proveedor</th>
-                    <th>Identificación</th>
-                    <th>Factura</th>
-                    <th>Concepto</th>
-                    <th>Estado</th>
-                    <th>Importe</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <Link to={`/pagos/${p.lote_id}`}>#{p.lote_id}</Link>
-                      </td>
-                      <td>{p.razon_social}</td>
-                      <td>{p.identificacion}</td>
-                      <td>{p.numero_factura ?? "—"}</td>
-                      <td>{p.concepto1 ?? p.lote_concepto}</td>
-                      <td>
-                        <StatusBadge estado={p.estado} />
-                      </td>
-                      <td className="money">{formatMoney(p.importe)}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-sm"
-                          onClick={() => abrirDetalle(p.id)}
-                        >
-                          Ver detalle
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="card animate-fade-up animate-delay-2">
+            <div className="card-header">
+              <h2>Resultados — {formatDate(fechaMostrada)}</h2>
+              {q && <span className="pill animate-scale-in">Filtro: {q}</span>}
             </div>
 
-            {data.pages > 1 && (
-              <div className="pagination">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Anterior
-                </button>
-                <span>
-                  Página {data.page} de {data.pages}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  disabled={page >= data.pages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Siguiente
-                </button>
+            {loading ? (
+              <div className="historial-loading">
+                <div className="historial-loading-bar" />
+                <p>Cargando pagos…</p>
               </div>
+            ) : data?.items.length ? (
+              <>
+                <div className="table-wrap table-animated">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Lote</th>
+                        <th>Proveedor</th>
+                        <th>Identificación</th>
+                        <th>Factura</th>
+                        <th>Concepto</th>
+                        <th>Estado</th>
+                        <th>Importe</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.items.map((p, i) => (
+                        <tr
+                          key={p.id}
+                          className="animate-table-row"
+                          style={{ animationDelay: `${0.04 + i * 0.045}s` }}
+                        >
+                          <td>
+                            <Link to={`/pagos/${p.lote_id}`}>#{p.lote_id}</Link>
+                          </td>
+                          <td>{p.razon_social}</td>
+                          <td>{p.identificacion}</td>
+                          <td>{p.numero_factura ?? "—"}</td>
+                          <td>{p.concepto1 ?? p.lote_concepto}</td>
+                          <td>
+                            <StatusBadge estado={p.estado} />
+                          </td>
+                          <td className="money">{formatMoney(p.importe)}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={() => abrirDetalle(p.id)}
+                            >
+                              Ver detalle
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {data.pages > 1 && (
+                  <div className="pagination">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      Anterior
+                    </button>
+                    <span>
+                      Página {data.page} de {data.pages}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={page >= data.pages}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="empty-state animate-fade-up">No hay pagos registrados para esta fecha.</p>
             )}
-          </>
-        ) : (
-          <p className="empty-state">No hay pagos registrados para esta fecha.</p>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       {(detalle || detalleLoading) && (
         <div className="modal-overlay" onClick={() => !detalleLoading && setDetalle(null)}>
