@@ -474,7 +474,7 @@ button, input, select, textarea { font: inherit; }
 
 .historial-search-fields {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) 1fr;
+  grid-template-columns: minmax(160px, 200px) minmax(160px, 200px) minmax(220px, 1fr);
   gap: 1rem;
 }
 
@@ -1267,6 +1267,51 @@ tr.row-warning td { background: #fffbeb; }
   animation: logoFloat 3.5s ease-in-out infinite;
 }
 
+.login-colbeef-logo-wrap {
+  margin-bottom: 1.75rem;
+  position: relative;
+  z-index: 1;
+  animation: loginLogoReveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-colbeef-logo-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.35rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+  animation: loginLogoFloat 4.5s ease-in-out 0.85s infinite;
+}
+
+.login-colbeef-logo-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: loginLogoShine 5s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+
+.login-colbeef-logo {
+  display: block;
+  width: min(220px, 72vw);
+  height: auto;
+  max-height: 56px;
+  object-fit: contain;
+}
+
 .login-panel-brand h1 {
   font-size: 1.85rem;
   font-weight: 700;
@@ -1486,6 +1531,27 @@ tr.row-warning td { background: #fffbeb; }
 @keyframes logoFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
+}
+
+@keyframes loginLogoReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loginLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes loginLogoShine {
+  0%, 72% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
 }
 
 @keyframes loginShake {

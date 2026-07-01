@@ -81,15 +81,24 @@ def cuentas_ordenantes(
 
 @router.get("/historial/pagos", response_model=HistorialPagosResponse)
 def historial_pagos(
-    fecha: date = Query(..., description="Fecha de operación del lote (YYYY-MM-DD)"),
+    fecha_desde: date | None = Query(None, description="Inicio del rango (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fin del rango (YYYY-MM-DD)"),
+    fecha: date | None = Query(None, description="Día único (compatibilidad)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     q: str | None = Query(None, max_length=80),
     db: Session = Depends(get_db),
     _: Usuario = Depends(require_admin),
 ):
+    desde = fecha_desde or fecha
+    hasta = fecha_hasta or fecha
+    if not desde or not hasta:
+        raise HTTPException(
+            status_code=400,
+            detail="Indique fecha_desde y fecha_hasta (o fecha para un solo día)",
+        )
     return historial_service.buscar_pagos_por_fecha(
-        db, fecha=fecha, page=page, page_size=page_size, q=q
+        db, fecha_desde=desde, fecha_hasta=hasta, page=page, page_size=page_size, q=q
     )
 
 

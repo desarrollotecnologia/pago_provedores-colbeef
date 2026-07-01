@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -77,7 +78,35 @@ def get_lote(db: Session, lote_id: int) -> LotePago:
     )
     if not lote:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
+    _recalcular_lote(db, lote)
     return lote
+
+
+def pagos_activos_lote(lote: LotePago) -> list[Pago]:
+    return [
+        p
+        for p in lote.pagos
+        if p.estado != "anulado" and Decimal(p.importe) > 0
+    ]
+
+
+def regenerar_archivo_plano(db: Session, lote: LotePago) -> tuple[Path, str]:
+    """Genera el TXT con todos los pagos activos del lote."""
+    from app.services.archivo_plano_service import generar_archivo_plano
+    from app.services.config_service import get_ciudad_default
+
+    pagos = pagos_activos_lote(lote)
+    if not pagos:
+        raise HTTPException(status_code=400, detail="El lote no tiene pagos activos")
+
+    ciudad = get_ciudad_default(db)
+    nombre = lote.archivo_plano_nombre or (
+        f"PAGOS_{lote.fecha_operacion.strftime('%Y%m%d')}_L{lote.id}.txt"
+    )
+    ruta, nombre = generar_archivo_plano(pagos, ciudad=ciudad, nombre_archivo=nombre)
+    lote.archivo_plano_nombre = nombre
+    lote.archivo_plano_ruta = str(ruta)
+    return Path(ruta), nombre
 
 
 def list_lotes(
@@ -101,6 +130,8 @@ def list_lotes(
     page_size = min(max(page_size, 1), 100)
     offset = (max(page, 1) - 1) * page_size
     items = db.scalars(stmt.offset(offset).limit(page_size)).all()
+    for lote in items:
+        _recalcular_lote(db, lote)
     return list(items), total
 
 
@@ -216,7 +247,7 @@ def confirmar_lote(db: Session, lote_id: int) -> LotePago:
     if count == 0:
         raise HTTPException(status_code=400, detail="El lote no tiene pagos")
 
-    lote.cantidad_pagos = count
+    _recalcular_lote(db, lote)
     lote.estado = "confirmado"
     db.commit()
     return get_lote(db, lote_id)

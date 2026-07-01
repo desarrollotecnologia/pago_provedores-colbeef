@@ -5,7 +5,8 @@ from pydantic import BaseModel
 
 
 class HistorialResumen(BaseModel):
-    fecha: date
+    fecha_desde: date
+    fecha_hasta: date
     importe_total: Decimal
     cantidad_pagos: int
 

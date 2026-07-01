@@ -68,6 +68,7 @@ def listar_lotes(
         page=page,
         page_size=page_size,
     )
+    db.commit()
     return LoteListResponse(
         items=[LoteListItem.model_validate(i) for i in items],
         total=total,
@@ -88,15 +89,24 @@ def crear_lote(
 
 @router.get("/historial/pagos", response_model=HistorialPagosResponse)
 def historial_pagos_por_fecha(
-    fecha: date = Query(..., description="Fecha de operación del lote (YYYY-MM-DD)"),
+    fecha_desde: date | None = Query(None, description="Inicio del rango (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fin del rango (YYYY-MM-DD)"),
+    fecha: date | None = Query(None, description="Día único (compatibilidad)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     q: str | None = Query(None, max_length=80),
     db: Session = Depends(get_db),
     _: Usuario = Depends(require_admin),
 ):
+    desde = fecha_desde or fecha
+    hasta = fecha_hasta or fecha
+    if not desde or not hasta:
+        raise HTTPException(
+            status_code=400,
+            detail="Indique fecha_desde y fecha_hasta (o fecha para un solo día)",
+        )
     return historial_service.buscar_pagos_por_fecha(
-        db, fecha=fecha, page=page, page_size=page_size, q=q
+        db, fecha_desde=desde, fecha_hasta=hasta, page=page, page_size=page_size, q=q
     )
 
 
@@ -118,7 +128,9 @@ def obtener_lote(
     db: Session = Depends(get_db),
     _: Usuario = Depends(require_admin),
 ):
-    return svc.get_lote(db, lote_id)
+    lote = svc.get_lote(db, lote_id)
+    db.commit()
+    return lote
 
 
 @router.put("/{lote_id}", response_model=LoteResponse)
@@ -186,11 +198,11 @@ def descargar_archivo(
     _: Usuario = Depends(require_admin),
 ):
     lote = svc.get_lote(db, lote_id)
-    if not lote.archivo_plano_ruta:
-        raise HTTPException(status_code=404, detail="Archivo no generado")
+    ruta, nombre = svc.regenerar_archivo_plano(db, lote)
+    db.commit()
     return FileResponse(
-        lote.archivo_plano_ruta,
-        filename=lote.archivo_plano_nombre or "pagos.txt",
+        str(ruta),
+        filename=nombre,
         media_type="text/plain",
     )
 

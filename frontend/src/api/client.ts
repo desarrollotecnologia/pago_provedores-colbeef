@@ -96,12 +96,16 @@ export const api = {
   },
 
   async historialPagos(params: {
-    fecha: string;
+    fecha_desde: string;
+    fecha_hasta: string;
     page?: number;
     page_size?: number;
     q?: string;
   }) {
-    const q = new URLSearchParams({ fecha: params.fecha });
+    const q = new URLSearchParams({
+      fecha_desde: params.fecha_desde,
+      fecha_hasta: params.fecha_hasta,
+    });
     if (params.page) q.set("page", String(params.page));
     if (params.page_size) q.set("page_size", String(params.page_size));
     if (params.q) q.set("q", params.q);

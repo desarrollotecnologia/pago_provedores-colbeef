@@ -16,9 +16,11 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 export default function HistorialPagos() {
-  const [fechaInput, setFechaInput] = useState(todayISO());
+  const hoy = todayISO();
+  const [fechaDesde, setFechaDesde] = useState(hoy);
+  const [fechaHasta, setFechaHasta] = useState(hoy);
   const [busqueda, setBusqueda] = useState("");
-  const [fechaConsulta, setFechaConsulta] = useState<string | null>(null);
+  const [rangoConsulta, setRangoConsulta] = useState<{ desde: string; hasta: string } | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<HistorialPagosResponse | null>(null);
@@ -38,12 +40,13 @@ export default function HistorialPagos() {
   }, []);
 
   const load = useCallback(async () => {
-    if (!fechaConsulta) return;
+    if (!rangoConsulta) return;
     setLoading(true);
     setError("");
     try {
       const res = await api.historialPagos({
-        fecha: fechaConsulta,
+        fecha_desde: rangoConsulta.desde,
+        fecha_hasta: rangoConsulta.hasta,
         page,
         page_size: 50,
         q: q || undefined,
@@ -60,23 +63,27 @@ export default function HistorialPagos() {
     } finally {
       setLoading(false);
     }
-  }, [fechaConsulta, page, q]);
+  }, [rangoConsulta, page, q]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const ejecutarBusqueda = (fecha: string, texto = busqueda) => {
+  const ejecutarBusqueda = (desde: string, hasta: string, texto = busqueda) => {
+    if (hasta < desde) {
+      setError("La fecha hasta no puede ser anterior a la fecha desde.");
+      return;
+    }
     setPage(1);
     setQ(texto.trim());
-    setFechaConsulta(fecha);
+    setRangoConsulta({ desde, hasta });
     setData(null);
     setError("");
   };
 
   const handleBuscar = (e: FormEvent) => {
     e.preventDefault();
-    ejecutarBusqueda(fechaInput);
+    ejecutarBusqueda(fechaDesde, fechaHasta);
   };
 
   const abrirDetalle = async (pagoId: number) => {
@@ -96,7 +103,12 @@ export default function HistorialPagos() {
     lista.find((t) => t.codigo === codigo)?.descripcion ?? String(codigo);
 
   const resumen = data?.resumen;
-  const fechaMostrada = fechaConsulta ?? fechaInput;
+  const rangoLabel =
+    rangoConsulta && rangoConsulta.desde === rangoConsulta.hasta
+      ? formatDate(rangoConsulta.desde)
+      : rangoConsulta
+        ? `${formatDate(rangoConsulta.desde)} — ${formatDate(rangoConsulta.hasta)}`
+        : "";
 
   return (
     <>
@@ -105,7 +117,7 @@ export default function HistorialPagos() {
           <p className="hero-eyebrow">Consulta histórica</p>
           <h1 className="page-title">Historial de pagos</h1>
           <p className="page-subtitle hero-sub">
-            El dashboard solo muestra el día actual. Aquí puede consultar cualquier fecha anterior.
+            El dashboard solo muestra el día actual. Aquí puede consultar un rango de fechas.
           </p>
         </div>
       </div>
@@ -113,8 +125,8 @@ export default function HistorialPagos() {
       <section className="historial-search-panel animate-fade-up animate-delay-1">
         <div className="historial-search-panel-head">
           <div>
-            <h2>Buscar por fecha</h2>
-            <p>Seleccione el día de operación y pulse consultar para ver todos los pagos.</p>
+            <h2>Buscar por período</h2>
+            <p>Defina desde y hasta para ver todos los pagos del rango seleccionado.</p>
           </div>
           <span className="historial-search-panel-badge animate-badge-glow">Archivo histórico</span>
         </div>
@@ -122,11 +134,23 @@ export default function HistorialPagos() {
         <form className="historial-search-panel-form" onSubmit={handleBuscar}>
           <div className="historial-search-fields">
             <label className="historial-field historial-field-date">
-              <span>Fecha de operación</span>
+              <span>Desde</span>
               <input
                 type="date"
-                value={fechaInput}
-                onChange={(e) => setFechaInput(e.target.value)}
+                value={fechaDesde}
+                max={fechaHasta}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="historial-field historial-field-date">
+              <span>Hasta</span>
+              <input
+                type="date"
+                value={fechaHasta}
+                min={fechaDesde}
+                onChange={(e) => setFechaHasta(e.target.value)}
                 required
               />
             </label>
@@ -150,8 +174,9 @@ export default function HistorialPagos() {
                 className="btn btn-outline btn-sm"
                 onClick={() => {
                   const hoy = todayISO();
-                  setFechaInput(hoy);
-                  ejecutarBusqueda(hoy);
+                  setFechaDesde(hoy);
+                  setFechaHasta(hoy);
+                  ejecutarBusqueda(hoy, hoy);
                 }}
               >
                 Hoy
@@ -160,12 +185,27 @@ export default function HistorialPagos() {
                 type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => {
-                  const ayer = offsetDateISO(-1);
-                  setFechaInput(ayer);
-                  ejecutarBusqueda(ayer);
+                  const fin = todayISO();
+                  const inicio = offsetDateISO(-6);
+                  setFechaDesde(inicio);
+                  setFechaHasta(fin);
+                  ejecutarBusqueda(inicio, fin);
                 }}
               >
-                Ayer
+                7 días
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => {
+                  const fin = todayISO();
+                  const inicio = offsetDateISO(-29);
+                  setFechaDesde(inicio);
+                  setFechaHasta(fin);
+                  ejecutarBusqueda(inicio, fin);
+                }}
+              >
+                30 días
               </button>
             </div>
             <button type="submit" className="btn btn-primary btn-lg historial-search-btn animate-btn-shine">
@@ -177,22 +217,22 @@ export default function HistorialPagos() {
 
       {error && <div className="alert alert-error animate-shake">{error}</div>}
 
-      {!fechaConsulta ? (
+      {!rangoConsulta ? (
         <div className="card historial-empty-prompt animate-scale-in animate-delay-2">
           <p className="historial-empty-icon animate-icon-float" aria-hidden>
             ◷
           </p>
-          <h3>Consulte un día del historial</h3>
+          <h3>Consulte un período del historial</h3>
           <p>
-            Elija una fecha arriba y pulse <strong>Consultar pagos</strong> para ver los movimientos
-            de ese día.
+            Elija <strong>desde</strong> y <strong>hasta</strong>, luego pulse{" "}
+            <strong>Consultar pagos</strong>.
           </p>
         </div>
       ) : (
-        <div key={`${fechaConsulta}-${q}`} className="historial-results animate-fade-up">
+        <div key={`${rangoConsulta.desde}-${rangoConsulta.hasta}-${q}`} className="historial-results animate-fade-up">
           <div className="cards-grid historial-summary animate-stagger">
             <div className="stat-card stat-card-accent">
-              <div className="label">Total del día</div>
+              <div className="label">Total del período</div>
               <div className="value">{formatMoney(resumen?.importe_total ?? 0)}</div>
             </div>
             <div className="stat-card">
@@ -200,14 +240,14 @@ export default function HistorialPagos() {
               <div className="value">{resumen?.cantidad_pagos ?? 0}</div>
             </div>
             <div className="stat-card">
-              <div className="label">Fecha consultada</div>
-              <div className="value historial-fecha-value">{formatDate(fechaMostrada)}</div>
+              <div className="label">Período</div>
+              <div className="value historial-fecha-value">{rangoLabel}</div>
             </div>
           </div>
 
           <div className="card animate-fade-up animate-delay-2">
             <div className="card-header">
-              <h2>Resultados — {formatDate(fechaMostrada)}</h2>
+              <h2>Resultados — {rangoLabel}</h2>
               {q && <span className="pill animate-scale-in">Filtro: {q}</span>}
             </div>
 
@@ -290,7 +330,7 @@ export default function HistorialPagos() {
                 )}
               </>
             ) : (
-              <p className="empty-state animate-fade-up">No hay pagos registrados para esta fecha.</p>
+              <p className="empty-state animate-fade-up">No hay pagos registrados en este período.</p>
             )}
           </div>
         </div>

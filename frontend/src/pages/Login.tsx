@@ -1,7 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
-import BrandLogoBox from "../components/BrandLogoBox";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -38,7 +37,17 @@ export default function Login() {
       <div className="login-bg-pattern" />
       <div className="login-split">
         <aside className="login-panel-brand">
-          <BrandLogoBox />
+          <div className="login-colbeef-logo-wrap">
+            <div className="login-colbeef-logo-card">
+              <img
+                src="/colbeef-logo.png"
+                alt="Colbeef"
+                className="login-colbeef-logo"
+                width={220}
+                height={56}
+              />
+            </div>
+          </div>
           <h1>Pago Proveedores</h1>
           <p>Colbeef · Sistema interno de tesorería</p>
           <ul className="login-features">

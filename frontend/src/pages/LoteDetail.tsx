@@ -372,7 +372,7 @@ export default function LoteDetail() {
               {processing ? "Finalizando…" : "Finalizar lote"}
             </button>
           ) : (
-            lote.archivo_plano_nombre && (
+            pagosActivos.length > 0 && (
               <button
                 type="button"
                 className="btn btn-primary"
@@ -407,7 +407,7 @@ export default function LoteDetail() {
             >
               Solo generar archivo
             </button>
-            {lote.archivo_plano_nombre && (
+            {pagosActivos.length > 0 && (
               <button
                 type="button"
                 className="btn btn-outline btn-sm"

@@ -1,8 +1,9 @@
-"""Consulta de pagos históricos por fecha de operación del lote."""
+"""Consulta de pagos históricos por rango de fechas de operación del lote."""
 import math
 from datetime import date
 from decimal import Decimal
 
+from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -15,9 +16,19 @@ from app.schemas.historial import (
 )
 
 
-def _filtros_fecha(fecha: date, q: str | None = None):
+def _normalizar_rango(fecha_desde: date, fecha_hasta: date) -> tuple[date, date]:
+    if fecha_hasta < fecha_desde:
+        raise HTTPException(
+            status_code=400,
+            detail="La fecha hasta no puede ser anterior a la fecha desde",
+        )
+    return fecha_desde, fecha_hasta
+
+
+def _filtros_rango(fecha_desde: date, fecha_hasta: date, q: str | None = None):
     filtros = [
-        LotePago.fecha_operacion == fecha,
+        LotePago.fecha_operacion >= fecha_desde,
+        LotePago.fecha_operacion <= fecha_hasta,
         Pago.estado != "anulado",
         LotePago.estado != "anulado",
     ]
@@ -36,12 +47,14 @@ def _filtros_fecha(fecha: date, q: str | None = None):
 def buscar_pagos_por_fecha(
     db: Session,
     *,
-    fecha: date,
+    fecha_desde: date,
+    fecha_hasta: date,
     page: int = 1,
     page_size: int = 50,
     q: str | None = None,
 ) -> HistorialPagosResponse:
-    filtros = _filtros_fecha(fecha, q)
+    fecha_desde, fecha_hasta = _normalizar_rango(fecha_desde, fecha_hasta)
+    filtros = _filtros_rango(fecha_desde, fecha_hasta, q)
 
     total = (
         db.scalar(
@@ -66,7 +79,7 @@ def buscar_pagos_por_fecha(
         select(Pago, LotePago)
         .join(LotePago, Pago.lote_id == LotePago.id)
         .where(*filtros)
-        .order_by(LotePago.id.desc(), Pago.id.desc())
+        .order_by(LotePago.fecha_operacion.desc(), LotePago.id.desc(), Pago.id.desc())
         .offset(offset)
         .limit(page_size)
     ).all()
@@ -92,7 +105,8 @@ def buscar_pagos_por_fecha(
 
     return HistorialPagosResponse(
         resumen=HistorialResumen(
-            fecha=fecha,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
             importe_total=Decimal(importe_total),
             cantidad_pagos=total,
         ),

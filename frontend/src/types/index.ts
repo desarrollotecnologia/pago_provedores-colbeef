@@ -133,7 +133,8 @@ export interface HistorialPagoItem {
 
 export interface HistorialPagosResponse {
   resumen: {
-    fecha: string;
+    fecha_desde: string;
+    fecha_hasta: string;
     importe_total: string;
     cantidad_pagos: number;
   };
