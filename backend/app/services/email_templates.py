@@ -6,11 +6,10 @@ from html import escape
 from zoneinfo import ZoneInfo
 
 from app.services.email_signature import (
-    GREEN,
     GREEN_DARK,
-    RED,
     firma_html,
     firma_texto,
+    logo_header_html,
 )
 from app.version import EMAIL_TEMPLATE_VERSION
 
@@ -99,10 +98,8 @@ mil gracias
         border:1px solid #d4e5db;">
         <tr>
           <td style="background:{GREEN_DARK};padding:14px 20px;">
-            <span style="color:#fff;font-size:18px;font-weight:bold;font-family:Arial,sans-serif;">
-              Col<span style="color:{RED};">beef</span>
-            </span>
-            <span style="color:rgba(255,255,255,0.85);font-size:12px;display:block;margin-top:2px;">
+            {logo_header_html()}
+            <span style="color:rgba(255,255,255,0.85);font-size:12px;display:block;margin-top:6px;">
               Soporte de pago a proveedores
             </span>
           </td>

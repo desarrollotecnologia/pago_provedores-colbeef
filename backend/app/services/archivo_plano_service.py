@@ -13,21 +13,36 @@ CUENTA_START_POS = 22
 CONCEPTO_PADDING_BASE = 76
 
 
+LINE_LENGTH_BASE = 281
+CUENTA_START_POS = 22
+CONCEPTO_PADDING_BASE = 76
+# Plan B / archivo bancario: tipo (2) + identificación (15) = 17 caracteres antes de forma de pago.
+IDENTIFICACION_ARCHIVO_LENGTH = 15
+REFERENCIA_CORREO_LENGTH = 16
+
+
+def _digitos_identificacion(valor: str) -> str:
+    """Solo dígitos, sin ceros a la izquierda (evita doble relleno desde Excel)."""
+    digitos = "".join(c for c in valor.strip() if c.isdigit())
+    return digitos.lstrip("0") or "0"
+
+
 def _tipo_registro(tipo_identificacion: int) -> str:
     return "03" if tipo_identificacion == 3 else "01"
 
 
 def _campo_identificacion_archivo(pago: Pago) -> str:
-    """16 dígitos de identificación — sin dígito de verificación (formato banco)."""
-    return pago.identificacion.strip().zfill(16)[-16:]
+    """15 dígitos de identificación — sin dígito de verificación (formato banco Plan B)."""
+    id_num = _digitos_identificacion(pago.identificacion)
+    return id_num.zfill(IDENTIFICACION_ARCHIVO_LENGTH)[-IDENTIFICACION_ARCHIVO_LENGTH:]
 
 
 def _campo_identificacion_referencia(pago: Pago) -> str:
     """16 dígitos para referencia en correos — NIT incluye dígito de verificación."""
-    id_num = pago.identificacion.strip()
+    id_num = _digitos_identificacion(pago.identificacion)
     if pago.tipo_identificacion == 3 and pago.digito_verificacion is not None:
         id_num = id_num + str(pago.digito_verificacion)
-    return id_num.zfill(16)[-16:]
+    return id_num.zfill(REFERENCIA_CORREO_LENGTH)[-REFERENCIA_CORREO_LENGTH:]
 
 
 def identificacion_correo(pago: Pago) -> str:

@@ -14,10 +14,12 @@ from app.services.email_assets import (
     ICON_PHONE,
     ICON_WEB,
     ICON_X,
+    LOGO_CID,
     EmailIcon,
     banner_public_url,
     get_banner_path,
     get_icon_path,
+    get_logo_path,
 )
 
 # Colores oficiales Colbeef (firma corporativa)
@@ -28,6 +30,26 @@ GREY = "#555555"
 GREY_MUTED = "#666666"
 
 SIGNATURE_WIDTH = 580
+LOGO_HEADER_WIDTH = 148
+
+
+def logo_header_html() -> str:
+    """Logotipo Colbeef para el encabezado del correo (imagen CID o wordmark HTML)."""
+    logo = get_logo_path()
+    if logo:
+        return f"""<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="background:#ffffff;border-radius:6px;padding:5px 12px;">
+      <img src="cid:{LOGO_CID}" width="{LOGO_HEADER_WIDTH}" alt="Colbeef"
+        style="display:block;border:0;max-width:{LOGO_HEADER_WIDTH}px;height:auto;" />
+    </td>
+  </tr>
+</table>"""
+    return f"""<span style="font-size:24px;font-weight:800;font-family:Arial,Helvetica,sans-serif;
+      letter-spacing:-0.3px;line-height:1.2;display:inline-block;background:#ffffff;
+      border-radius:6px;padding:5px 12px;">
+      <span style="color:{GREEN};">Col</span><span style="color:{RED};">beef</span><sup style="color:{RED};font-size:10px;">®</sup>
+    </span>"""
 
 SOCIAL_LINKS: tuple[tuple[EmailIcon, str, str], ...] = (
     (ICON_FACEBOOK, "https://www.facebook.com/colbeefoficial", "Facebook Colbeef"),

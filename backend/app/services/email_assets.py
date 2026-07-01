@@ -9,6 +9,8 @@ from app.core.config import get_settings
 BANNER_FILENAME = "email-banner-colbeef.png"
 BANNER_ORIGINAL_FILENAME = "FIRMAS COLBEEF_Mesa de trabajo 1 (1).png"
 BANNER_CID = "colbeef_banner"
+LOGO_FILENAME = "colbeef-logo.png"
+LOGO_CID = "colbeef_logo"
 ICONS_DIRNAME = "email-icons"
 
 
@@ -63,9 +65,29 @@ def get_icon_path(icon: EmailIcon) -> Path | None:
     return None
 
 
+def logo_candidates() -> list[Path]:
+    s = get_settings()
+    return [
+        s.project_root / "backend" / "app" / "static" / LOGO_FILENAME,
+        s.project_root / "frontend" / "public" / LOGO_FILENAME,
+        s.project_root / "frontend" / "src" / "assets" / LOGO_FILENAME,
+        s.static_dir / LOGO_FILENAME,
+    ]
+
+
+def get_logo_path() -> Path | None:
+    for path in logo_candidates():
+        if path.is_file():
+            return path
+    return None
+
+
 def inline_attachments() -> list[tuple[str, Path]]:
     """Recursos embebidos como cid: (Content-ID, ruta en disco)."""
     items: list[tuple[str, Path]] = []
+    logo = get_logo_path()
+    if logo:
+        items.append((LOGO_CID, logo))
     banner = get_banner_path()
     if banner and not get_settings().email_firma_banner_url:
         items.append((BANNER_CID, banner))
