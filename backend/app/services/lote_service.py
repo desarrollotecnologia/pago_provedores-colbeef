@@ -57,9 +57,22 @@ def _validar_pago_completo(pago: Pago) -> None:
 
 
 def _recalcular_lote(db: Session, lote: LotePago) -> None:
-    pagos = db.scalars(select(Pago).where(Pago.lote_id == lote.id, Pago.estado != "anulado")).all()
-    lote.importe_total = sum((p.importe for p in pagos), Decimal("0.00"))
-    lote.cantidad_pagos = len(pagos)
+    row = db.execute(
+        select(
+            func.coalesce(func.sum(Pago.importe), 0),
+            func.count(Pago.id),
+        ).where(Pago.lote_id == lote.id, Pago.estado != "anulado")
+    ).one()
+    lote.importe_total = Decimal(row[0])
+    lote.cantidad_pagos = int(row[1])
+
+
+def reparar_totales_lotes(db: Session) -> int:
+    """Recalcula importe_total y cantidad_pagos de todos los lotes."""
+    lotes = db.scalars(select(LotePago)).all()
+    for lote in lotes:
+        _recalcular_lote(db, lote)
+    return len(lotes)
 
 
 def _verificar_lote_editable(lote: LotePago) -> None:

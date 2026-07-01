@@ -238,6 +238,7 @@ export default function LoteDetail() {
   };
 
   const pagosActivos = lote?.pagos.filter((p) => p.estado !== "anulado") ?? [];
+  const totalPagosActivos = pagosActivos.reduce((sum, p) => sum + Number(p.importe || 0), 0);
   const pagosIncompletos = pagosActivos.filter(pagoIncompleto);
 
   const validarAntesDeProcesar = (): boolean => {
@@ -461,7 +462,7 @@ export default function LoteDetail() {
         </div>
         <div className="stat-card">
           <div className="label">Importe total</div>
-          <div className="value">{formatMoney(lote.importe_total)}</div>
+          <div className="value">{formatMoney(totalPagosActivos)}</div>
         </div>
         <div className="stat-card">
           <div className="label">Archivo plano</div>

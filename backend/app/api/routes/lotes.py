@@ -99,10 +99,10 @@ def historial_pagos_por_fecha(
     _: Usuario = Depends(require_admin),
 ):
     desde = fecha_desde or fecha
-    hasta = fecha_hasta or fecha
+    hasta = fecha_hasta or fecha or fecha_desde
     if not desde or not hasta:
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="Indique fecha_desde y fecha_hasta (o fecha para un solo día)",
         )
     return historial_service.buscar_pagos_por_fecha(

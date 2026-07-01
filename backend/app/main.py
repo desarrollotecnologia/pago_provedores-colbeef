@@ -43,6 +43,25 @@ def ensure_usability_table() -> None:
     EventoUsabilidad.__table__.create(bind=engine, checkfirst=True)
 
 
+@app.on_event("startup")
+def repair_lote_totals_on_startup() -> None:
+    """Corrige importe_total desactualizado en lotes existentes."""
+    from app.core.database import SessionLocal
+    from app.services import lote_service
+
+    db = SessionLocal()
+    try:
+        n = lote_service.reparar_totales_lotes(db)
+        db.commit()
+        if n:
+            print(f"[startup] Totales de {n} lote(s) sincronizados")
+    except Exception as exc:
+        db.rollback()
+        print(f"[startup] No se pudieron reparar totales de lotes: {exc}")
+    finally:
+        db.close()
+
+
 @app.get("/health")
 def health_check():
     routes = {getattr(r, "path", "") for r in app.routes}

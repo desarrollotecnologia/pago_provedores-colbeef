@@ -105,6 +105,8 @@ export const api = {
     const q = new URLSearchParams({
       fecha_desde: params.fecha_desde,
       fecha_hasta: params.fecha_hasta,
+      // Compatibilidad con backend anterior que solo aceptaba ?fecha=
+      fecha: params.fecha_desde,
     });
     if (params.page) q.set("page", String(params.page));
     if (params.page_size) q.set("page_size", String(params.page_size));
