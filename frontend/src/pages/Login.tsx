@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import colbeefLogo from "../assets/colbeef-logo.png";
 
 export default function Login() {
   const { user, loading, login } = useAuth();
@@ -40,7 +41,7 @@ export default function Login() {
           <div className="login-colbeef-logo-wrap">
             <div className="login-colbeef-logo-card">
               <img
-                src="/colbeef-logo.png"
+                src={colbeefLogo}
                 alt="Colbeef"
                 className="login-colbeef-logo"
                 width={220}

@@ -105,6 +105,20 @@ def email_banner():
     return FileResponse(path, media_type="image/png")
 
 
+@app.get("/colbeef-logo.png")
+def colbeef_logo():
+    """Logo del login — también servido vía /assets tras el build de Vite."""
+    candidates = [
+        static_dir / "colbeef-logo.png",
+        settings.project_root / "frontend" / "public" / "colbeef-logo.png",
+        settings.project_root / "frontend" / "src" / "assets" / "colbeef-logo.png",
+    ]
+    for path in candidates:
+        if path.is_file():
+            return FileResponse(path, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Logo Colbeef no encontrado")
+
+
 @app.get("/")
 def spa_index():
     return _spa_index()
@@ -115,6 +129,9 @@ def spa_fallback(full_path: str):
     """Rutas del SPA (React Router) — devuelve index.html."""
     if full_path.startswith("api") or full_path in ("docs", "openapi.json", "health", "redoc"):
         raise HTTPException(status_code=404)
-    if full_path.startswith("assets/") or full_path == "email-banner-colbeef.png":
+    if full_path.startswith("assets/") or full_path in (
+        "email-banner-colbeef.png",
+        "colbeef-logo.png",
+    ):
         raise HTTPException(status_code=404)
     return _spa_index()
