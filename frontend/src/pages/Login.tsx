@@ -3,7 +3,6 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import colbeefLogo from "../assets/colbeef-logo.png";
-import { BrandEyebrow, BrandName } from "../components/BrandMark";
 
 export default function Login() {
   const { user, loading, login } = useAuth();
@@ -50,13 +49,7 @@ export default function Login() {
               />
             </div>
           </div>
-          <div className="login-brand-titles">
-            <BrandEyebrow />
-            <h1>
-              <BrandName tone="login" />
-            </h1>
-          </div>
-          <p className="login-brand-tagline">Tesorería · uso interno</p>
+          <p className="login-brand-tagline">Colbeef · Sistema interno de tesorería</p>
           <ul className="login-features">
             <li>Gestión de lotes y pagos a proveedores</li>
             <li>Generación de archivo plano bancario</li>
