@@ -6,12 +6,39 @@ import { track } from "../telemetry/tracker";
 import type { CatalogoItem, HistorialPagoDetalle, HistorialPagosResponse } from "../types";
 import { formatDate, formatMoney, offsetDateISO, todayISO } from "../utils/format";
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function isEmptyValue(value: React.ReactNode): boolean {
+  if (value == null) return true;
+  if (typeof value === "string") {
+    const t = value.trim();
+    return t === "" || t === "—";
+  }
+  return false;
+}
+
+function DetailField({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  if (isEmptyValue(value)) return null;
   return (
-    <div className="detail-row">
-      <span className="detail-label">{label}</span>
-      <span className="detail-value">{value ?? "—"}</span>
+    <div className="pago-detalle-field">
+      <dt className="pago-detalle-field-label">{label}</dt>
+      <dd className={`pago-detalle-field-value${mono ? " pago-detalle-mono" : ""}`}>{value}</dd>
     </div>
+  );
+}
+
+function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <article className="pago-detalle-card">
+      <h4 className="pago-detalle-card-title">{title}</h4>
+      <dl className="pago-detalle-dl">{children}</dl>
+    </article>
   );
 }
 
@@ -340,82 +367,111 @@ export default function HistorialPagos() {
 
       {(detalle || detalleLoading) && (
         <div className="modal-overlay" onClick={() => !detalleLoading && setDetalle(null)}>
-          <div className="modal modal-wide historial-detalle-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal historial-detalle-modal" onClick={(e) => e.stopPropagation()}>
             {detalleLoading || !detalle ? (
-              <p>Cargando detalle…</p>
+              <div className="pago-detalle-loading">
+                <div className="historial-loading-bar" />
+                <p>Cargando detalle…</p>
+              </div>
             ) : (
               <>
-                <div className="card-header">
-                  <h3>Detalle del pago #{detalle.id}</h3>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalle(null)}>
-                    Cerrar
-                  </button>
-                </div>
+                <header className="pago-detalle-header">
+                  <div className="pago-detalle-header-main">
+                    <p className="pago-detalle-eyebrow">Pago #{detalle.id}</p>
+                    <h3 className="pago-detalle-title">{detalle.razon_social}</h3>
+                    <p className="pago-detalle-subtitle">
+                      {detalle.tipo_identificacion === 3 && detalle.digito_verificacion != null
+                        ? `NIT ${detalle.identificacion}-${detalle.digito_verificacion}`
+                        : `${labelTipo(detalle.tipo_identificacion, tiposId)} ${detalle.identificacion}`}
+                    </p>
+                  </div>
+                  <div className="pago-detalle-header-side">
+                    <div className="pago-detalle-importe">{formatMoney(detalle.importe)}</div>
+                    <StatusBadge estado={detalle.estado} />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm pago-detalle-close"
+                      onClick={() => setDetalle(null)}
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </header>
 
-                <div className="historial-detalle-grid">
-                  <section>
-                    <h4>Proveedor</h4>
-                    <DetailRow label="Razón social" value={detalle.razon_social} />
-                    <DetailRow
-                      label="Identificación"
-                      value={
-                        detalle.tipo_identificacion === 3 && detalle.digito_verificacion != null
-                          ? `${detalle.identificacion}-${detalle.digito_verificacion}`
-                          : detalle.identificacion
-                      }
-                    />
-                    <DetailRow
-                      label="Tipo ID"
-                      value={labelTipo(detalle.tipo_identificacion, tiposId)}
-                    />
-                    <DetailRow label="Email" value={detalle.email_destino} />
-                  </section>
+                <div className="pago-detalle-body">
+                  <div className="pago-detalle-cards">
+                    <DetailCard title="Información del pago">
+                      <DetailField label="Factura" value={detalle.numero_factura} />
+                      <DetailField label="Concepto principal" value={detalle.concepto1} />
+                      <DetailField label="Concepto 2" value={detalle.concepto2} />
+                      <DetailField label="Concepto 3" value={detalle.concepto3} />
+                      <DetailField label="Concepto 4" value={detalle.concepto4} />
+                      <DetailField
+                        label="Fecha límite"
+                        value={detalle.fecha_limite ? formatDate(detalle.fecha_limite) : null}
+                      />
+                      <DetailField label="Correo destino" value={detalle.email_destino} />
+                    </DetailCard>
 
-                  <section>
-                    <h4>Pago</h4>
-                    <DetailRow label="Importe" value={formatMoney(detalle.importe)} />
-                    <DetailRow label="Factura" value={detalle.numero_factura} />
-                    <DetailRow label="Concepto 1" value={detalle.concepto1} />
-                    <DetailRow label="Concepto 2" value={detalle.concepto2} />
-                    <DetailRow label="Concepto 3" value={detalle.concepto3} />
-                    <DetailRow label="Concepto 4" value={detalle.concepto4} />
-                    <DetailRow label="Estado" value={<StatusBadge estado={detalle.estado} />} />
-                    <DetailRow label="Ref. 16" value={detalle.referencia_16} />
-                    <DetailRow label="Ref. 11" value={detalle.referencia_11} />
-                  </section>
+                    <DetailCard title="Cuenta destino">
+                      <DetailField
+                        label="Banco"
+                        value={
+                          detalle.banco_descripcion
+                            ? `${detalle.banco_codigo} — ${detalle.banco_descripcion}`
+                            : String(detalle.banco_codigo)
+                        }
+                      />
+                      <DetailField
+                        label="Tipo de cuenta"
+                        value={labelTipo(detalle.tipo_cuenta, tiposCuenta)}
+                      />
+                      <DetailField label="Número de cuenta" value={detalle.numero_cuenta} mono />
+                      <DetailField label="Código oficina" value={detalle.cod_oficina} />
+                      <DetailField label="Forma de pago" value={String(detalle.forma_pago)} />
+                    </DetailCard>
 
-                  <section>
-                    <h4>Cuenta destino</h4>
-                    <DetailRow
-                      label="Banco"
-                      value={
-                        detalle.banco_descripcion
-                          ? `${detalle.banco_codigo} — ${detalle.banco_descripcion}`
-                          : detalle.banco_codigo
-                      }
-                    />
-                    <DetailRow
-                      label="Tipo cuenta"
-                      value={labelTipo(detalle.tipo_cuenta, tiposCuenta)}
-                    />
-                    <DetailRow label="Número cuenta" value={detalle.numero_cuenta} />
-                    <DetailRow label="Cód. oficina" value={detalle.cod_oficina} />
-                    <DetailRow label="Forma pago" value={detalle.forma_pago} />
-                    <DetailRow label="Fecha límite" value={formatDate(detalle.fecha_limite)} />
-                  </section>
+                    <DetailCard title="Lote asociado">
+                      <DetailField
+                        label="Número de lote"
+                        value={<Link to={`/pagos/${detalle.lote_id}`}>#{detalle.lote_id}</Link>}
+                      />
+                      <DetailField
+                        label="Fecha de operación"
+                        value={formatDate(detalle.lote_fecha_operacion)}
+                      />
+                      <DetailField label="Concepto del lote" value={detalle.lote_concepto} />
+                      <DetailField
+                        label="Estado del lote"
+                        value={<StatusBadge estado={detalle.lote_estado} />}
+                      />
+                      <DetailField
+                        label="Total del lote"
+                        value={formatMoney(detalle.lote_importe_total)}
+                      />
+                      <DetailField label="Archivo plano" value={detalle.lote_archivo} mono />
+                    </DetailCard>
+                  </div>
 
-                  <section>
-                    <h4>Lote</h4>
-                    <DetailRow
-                      label="Lote"
-                      value={<Link to={`/pagos/${detalle.lote_id}`}>#{detalle.lote_id}</Link>}
-                    />
-                    <DetailRow label="Fecha operación" value={formatDate(detalle.lote_fecha_operacion)} />
-                    <DetailRow label="Concepto lote" value={detalle.lote_concepto} />
-                    <DetailRow label="Estado lote" value={<StatusBadge estado={detalle.lote_estado} />} />
-                    <DetailRow label="Total lote" value={formatMoney(detalle.lote_importe_total)} />
-                    <DetailRow label="Archivo plano" value={detalle.lote_archivo} />
-                  </section>
+                  {(detalle.referencia_16 || detalle.referencia_11) && (
+                    <aside className="pago-detalle-refs">
+                      <p className="pago-detalle-refs-title">Referencias del archivo bancario</p>
+                      <div className="pago-detalle-refs-grid">
+                        {detalle.referencia_16 && (
+                          <div>
+                            <span>Referencia 16</span>
+                            <code>{detalle.referencia_16}</code>
+                          </div>
+                        )}
+                        {detalle.referencia_11 && (
+                          <div>
+                            <span>Referencia 11</span>
+                            <code>{detalle.referencia_11}</code>
+                          </div>
+                        )}
+                      </div>
+                    </aside>
+                  )}
                 </div>
               </>
             )}

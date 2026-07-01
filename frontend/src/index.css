@@ -778,7 +778,186 @@ button, input, select, textarea { font: inherit; }
 
 .historial-fecha-value { font-size: 1.1rem !important; }
 
-.historial-detalle-modal { max-width: 720px; max-height: 90vh; overflow-y: auto; }
+.historial-detalle-modal {
+  max-width: 860px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.pago-detalle-loading {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.pago-detalle-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem 1.25rem;
+  background: linear-gradient(135deg, var(--green-900) 0%, var(--green-800) 100%);
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: #fff;
+}
+
+.pago-detalle-header-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.pago-detalle-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.pago-detalle-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: #fff;
+  word-break: break-word;
+}
+
+.pago-detalle-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pago-detalle-header-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.pago-detalle-importe {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.pago-detalle-close {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.pago-detalle-close:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.pago-detalle-body {
+  padding: 1.35rem 1.5rem 1.5rem;
+}
+
+.pago-detalle-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.pago-detalle-cards .pago-detalle-card:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.pago-detalle-card {
+  background: var(--green-50, #f4faf6);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 1rem 1.1rem 1.05rem;
+}
+
+.pago-detalle-card-title {
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 2px solid var(--green-200, #c8e6d0);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--green-800);
+}
+
+.pago-detalle-dl {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.pago-detalle-field {
+  margin: 0;
+}
+
+.pago-detalle-field-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.pago-detalle-field-value {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--green-900);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.pago-detalle-mono {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 0.88rem;
+}
+
+.pago-detalle-refs {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f8faf9;
+  border: 1px dashed var(--border);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.pago-detalle-refs-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pago-detalle-refs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.pago-detalle-refs-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pago-detalle-refs-grid span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.pago-detalle-refs-grid code {
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 0.82rem;
+  color: var(--green-900);
+  word-break: break-all;
+}
 
 .historial-detalle-grid {
   display: grid;
@@ -805,6 +984,24 @@ button, input, select, textarea { font: inherit; }
 
 .detail-label { color: var(--text-muted); flex-shrink: 0; }
 .detail-value { text-align: right; font-weight: 500; color: var(--green-900); }
+
+@media (max-width: 720px) {
+  .pago-detalle-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pago-detalle-header-side {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pago-detalle-cards {
+    grid-template-columns: 1fr;
+  }
+}
 
 @media (max-width: 640px) {
   .historial-detalle-grid { grid-template-columns: 1fr; }
