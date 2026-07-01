@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import BrandLogoBox from "./BrandLogoBox";
+import { BrandEyebrow, BrandName } from "./BrandMark";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../hooks/useRole";
 import { usePageTracking } from "../telemetry/usePageTracking";
@@ -27,9 +28,11 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <BrandLogoBox size="sm" />
-          <div>
-            <h1>Pago Proveedores</h1>
-            <p>Colbeef · Tesorería</p>
+          <div className="sidebar-brand-text">
+            <BrandEyebrow />
+            <h1>
+              <BrandName tone="sidebar" />
+            </h1>
           </div>
         </div>
 
@@ -68,10 +71,19 @@ export default function Layout() {
       <div className="main-content">
         <header className="topbar">
           <div className="topbar-title">
-            <span className="topbar-label">
-              {isAdmin ? "Sistema de pagos" : "Telemetría de usabilidad"}
-            </span>
-            <strong>{config?.app_name ?? "Pago Proveedores"}</strong>
+            {isAdmin ? (
+              <>
+                <BrandEyebrow className="topbar-label" />
+                <strong>
+                  <BrandName tone="topbar" />
+                </strong>
+              </>
+            ) : (
+              <>
+                <span className="topbar-label">Supervisión</span>
+                <strong className="topbar-title-alt">Telemetría de usabilidad</strong>
+              </>
+            )}
           </div>
           <div className="topbar-user">
             <div className="user-chip">
