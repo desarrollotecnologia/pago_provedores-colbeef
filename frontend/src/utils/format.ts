@@ -36,6 +36,15 @@ export function accionCambioClass(accion: string) {
   return `cambio-accion cambio-accion-${accion}`;
 }
 
+export function formatTodayLong() {
+  const d = new Date();
+  const weekday = d.toLocaleDateString("es-CO", { weekday: "long" });
+  const day = d.getDate();
+  const month = d.toLocaleDateString("es-CO", { month: "long" });
+  const year = d.getFullYear();
+  return `${weekday}, ${day} de ${month} ${year}`.toLowerCase();
+}
+
 export function todayISO() {
   const d = new Date();
   const y = d.getFullYear();

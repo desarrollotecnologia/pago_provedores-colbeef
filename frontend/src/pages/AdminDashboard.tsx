@@ -5,7 +5,7 @@ import StatusBadge from "../components/StatusBadge";
 import { useAuth } from "../context/AuthContext";
 import { track } from "../telemetry/tracker";
 import type { DashboardResponse } from "../types";
-import { formatMoney, isSameDayISO, todayISO } from "../utils/format";
+import { formatMoney, formatTodayLong, isSameDayISO, todayISO } from "../utils/format";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -73,11 +73,7 @@ export default function AdminDashboard() {
   }
 
   const primerNombre = user?.nombre_completo?.split(" ")[0] ?? user?.username ?? "Usuario";
-  const fechaHoy = new Date().toLocaleDateString("es-CO", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const fechaHoy = formatTodayLong();
 
   return (
     <>
