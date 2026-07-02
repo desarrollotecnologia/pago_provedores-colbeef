@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models import Banco, LotePago, Pago, Proveedor, TipoCuenta, TipoIdentificacion
 from app.schemas.proveedores import ProveedorCreate, ProveedorUpdate
+from app.services import cambios_service
 
 
 def _apply_digito_regla(data: dict) -> None:
@@ -135,7 +136,7 @@ def get_proveedor(db: Session, proveedor_id: int) -> Proveedor:
     return proveedor
 
 
-def create_proveedor(db: Session, data: ProveedorCreate) -> Proveedor:
+def create_proveedor(db: Session, data: ProveedorCreate, usuario_id: int) -> Proveedor:
     payload = data.model_dump()
     if payload.get("email") == "":
         payload["email"] = None
@@ -147,15 +148,18 @@ def create_proveedor(db: Session, data: ProveedorCreate) -> Proveedor:
 
     proveedor = Proveedor(**payload, activo=True)
     db.add(proveedor)
+    db.flush()
+    cambios_service.registrar_creacion(db, proveedor, usuario_id)
     db.commit()
     db.refresh(proveedor)
     return get_proveedor(db, proveedor.id)
 
 
 def update_proveedor(
-    db: Session, proveedor_id: int, data: ProveedorUpdate
+    db: Session, proveedor_id: int, data: ProveedorUpdate, usuario_id: int
 ) -> Proveedor:
     proveedor = get_proveedor(db, proveedor_id)
+    antes = cambios_service.proveedor_snapshot(proveedor)
     updates = data.model_dump(exclude_unset=True)
 
     if "email" in updates and updates["email"] == "":
@@ -184,13 +188,15 @@ def update_proveedor(
     for key, value in updates.items():
         setattr(proveedor, key, value)
 
+    cambios_service.registrar_edicion(db, proveedor, antes, usuario_id)
     db.commit()
     return get_proveedor(db, proveedor_id)
 
 
-def deactivate_proveedor(db: Session, proveedor_id: int) -> Proveedor:
+def deactivate_proveedor(db: Session, proveedor_id: int, usuario_id: int) -> Proveedor:
     proveedor = get_proveedor(db, proveedor_id)
     proveedor.activo = False
+    cambios_service.registrar_desactivacion(db, proveedor, usuario_id)
     db.commit()
     return get_proveedor(db, proveedor_id)
 

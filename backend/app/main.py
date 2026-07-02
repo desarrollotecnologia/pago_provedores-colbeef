@@ -9,7 +9,7 @@ from starlette.responses import Response
 from app.api.routes import auth, catalogos, lotes, proveedores, sistema, usability
 from app.core.config import get_settings
 from app.core.database import engine
-from app.models import EventoUsabilidad
+from app.models import CambioProveedor, EventoUsabilidad
 from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION
 
 settings = get_settings()
@@ -39,8 +39,9 @@ app.include_router(usability.router, prefix=API_PREFIX)
 
 @app.on_event("startup")
 def ensure_usability_table() -> None:
-    """Garantiza la tabla de telemetría en instalaciones que no corrieron migrate."""
+    """Garantiza tablas auxiliares en instalaciones que no corrieron migrate."""
     EventoUsabilidad.__table__.create(bind=engine, checkfirst=True)
+    CambioProveedor.__table__.create(bind=engine, checkfirst=True)
 
 
 @app.on_event("startup")

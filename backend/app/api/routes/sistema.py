@@ -10,9 +10,10 @@ from app.core.config import get_settings
 from app.version import APP_VERSION, EMAIL_TEMPLATE_VERSION, UI_VERSION
 from app.core.database import get_db
 from app.models import CuentaOrdenante, Usuario
+from app.schemas.cambios import CambioProveedorDetalle, CambiosProveedorResponse
 from app.schemas.dashboard import DashboardResponse, PublicConfig
 from app.schemas.historial import HistorialPagoDetalle, HistorialPagosResponse
-from app.services import dashboard_service, historial_service
+from app.services import cambios_service, dashboard_service, historial_service
 
 router = APIRouter(tags=["Sistema"])
 
@@ -111,4 +112,39 @@ def historial_pago_detalle(
     detalle = historial_service.obtener_pago_detalle(db, pago_id)
     if not detalle:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Pago no encontrado")
+    return detalle
+
+
+@router.get("/cambios/proveedores", response_model=CambiosProveedorResponse)
+def cambios_proveedores(
+    fecha_desde: date | None = Query(None, description="Inicio del rango (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fin del rango (YYYY-MM-DD)"),
+    fecha: date | None = Query(None, description="Día único (compatibilidad)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    q: str | None = Query(None, max_length=80),
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    desde = fecha_desde or fecha
+    hasta = fecha_hasta or fecha or fecha_desde
+    if not desde or not hasta:
+        raise HTTPException(
+            status_code=422,
+            detail="Indique fecha_desde y fecha_hasta (o fecha para un solo día)",
+        )
+    return cambios_service.buscar_cambios(
+        db, fecha_desde=desde, fecha_hasta=hasta, page=page, page_size=page_size, q=q
+    )
+
+
+@router.get("/cambios/proveedores/{cambio_id}", response_model=CambioProveedorDetalle)
+def cambio_proveedor_detalle(
+    cambio_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(require_admin),
+):
+    detalle = cambios_service.obtener_detalle(db, cambio_id)
+    if not detalle:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Registro de cambio no encontrado")
     return detalle

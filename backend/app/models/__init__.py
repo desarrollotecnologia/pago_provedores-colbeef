@@ -261,3 +261,36 @@ class EventoUsabilidad(Base):
     creado_en: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
+
+
+class CambioProveedor(Base):
+    """Auditoría de altas, ediciones y bajas de proveedores."""
+
+    __tablename__ = "cambios_proveedor"
+    __table_args__ = (
+        Index("idx_cambios_proveedor_fecha", "registrado_en"),
+        Index("idx_cambios_proveedor_proveedor", "proveedor_id"),
+        Index("idx_cambios_proveedor_usuario", "usuario_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    proveedor_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("proveedores.id"), nullable=False
+    )
+    usuario_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("usuarios.id"), nullable=False
+    )
+    accion: Mapped[str] = mapped_column(
+        Enum("crear", "editar", "desactivar", name="accion_cambio_proveedor"),
+        nullable=False,
+    )
+    razon_social: Mapped[str] = mapped_column(String(200), nullable=False)
+    identificacion: Mapped[str] = mapped_column(String(20), nullable=False)
+    cambios: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    registrado_en: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+    proveedor: Mapped["Proveedor"] = relationship()
+    usuario: Mapped["Usuario"] = relationship()

@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import { useAuth } from "./context/AuthContext";
 import { useRole } from "./hooks/useRole";
 import AdminDashboard from "./pages/AdminDashboard";
+import Cambios from "./pages/Cambios";
 import HistorialPagos from "./pages/HistorialPagos";
 import Login from "./pages/Login";
 import LoteDetail from "./pages/LoteDetail";
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <AdminRoute>
               <HistorialPagos />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="cambios"
+          element={
+            <AdminRoute>
+              <Cambios />
             </AdminRoute>
           }
         />

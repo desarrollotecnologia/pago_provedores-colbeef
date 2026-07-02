@@ -12,6 +12,30 @@ export function formatDate(value: string | null) {
   return new Date(value + "T00:00:00").toLocaleDateString("es-CO");
 }
 
+export function formatDateTime(value: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function accionCambioLabel(accion: string) {
+  if (accion === "crear") return "Creación";
+  if (accion === "editar") return "Edición";
+  if (accion === "desactivar") return "Desactivación";
+  return accion;
+}
+
+export function accionCambioClass(accion: string) {
+  return `cambio-accion cambio-accion-${accion}`;
+}
+
 export function todayISO() {
   const d = new Date();
   const y = d.getFullYear();

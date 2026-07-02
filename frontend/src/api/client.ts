@@ -5,6 +5,8 @@ import type {
   DashboardResponse,
   HistorialPagoDetalle,
   HistorialPagosResponse,
+  CambioProveedorDetalle,
+  CambiosProveedorResponse,
   Lote,
   LoteListItem,
   Paginated,
@@ -143,6 +145,28 @@ export const api = {
       }
     }
     throw lastError ?? new ApiError("Pago no encontrado", 404);
+  },
+
+  cambiosProveedores(params: {
+    fecha_desde: string;
+    fecha_hasta: string;
+    page?: number;
+    page_size?: number;
+    q?: string;
+  }) {
+    const q = new URLSearchParams({
+      fecha_desde: params.fecha_desde,
+      fecha_hasta: params.fecha_hasta,
+      fecha: params.fecha_desde,
+    });
+    if (params.page) q.set("page", String(params.page));
+    if (params.page_size) q.set("page_size", String(params.page_size));
+    if (params.q) q.set("q", params.q);
+    return request<CambiosProveedorResponse>(`/cambios/proveedores?${q.toString()}`);
+  },
+
+  cambioProveedorDetalle(id: number) {
+    return request<CambioProveedorDetalle>(`/cambios/proveedores/${id}`);
   },
 
   smtpStatus() {

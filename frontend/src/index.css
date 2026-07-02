@@ -1128,6 +1128,80 @@ button, input, select, textarea { font: inherit; }
   font-weight: 600;
 }
 
+.cambio-accion {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cambio-accion-crear {
+  background: var(--green-100);
+  color: var(--green-800);
+}
+
+.cambio-accion-editar {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.cambio-accion-desactivar {
+  background: var(--red-100);
+  color: var(--red-600);
+}
+
+.pago-detalle-header .cambio-accion {
+  font-size: 0.72rem;
+}
+
+.cambio-detalle-meta {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.cambio-detalle-meta a {
+  color: var(--green-700);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cambio-detalle-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.cambio-detalle-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.cambio-detalle-tabla th {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  background: var(--green-50);
+  color: var(--green-800);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--red-100);
+}
+
+.cambio-detalle-tabla td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.cambio-detalle-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .system-status {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.models import (  # noqa: F401 - registra modelos
     Banco,
+    CambioProveedor,
     Configuracion,
     CuentaOrdenante,
     EnvioCorreo,
@@ -98,6 +99,19 @@ def _apply_schema_patches() -> None:
             EventoUsabilidad.__table__.create(bind=conn)
             conn.commit()
             print("  Tabla eventos_usabilidad creada.")
+
+        if not conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'cambios_proveedor'
+                """
+            )
+        ).scalar():
+            CambioProveedor.__table__.create(bind=conn)
+            conn.commit()
+            print("  Tabla cambios_proveedor creada.")
 
 
 def create_resumen_view() -> None:

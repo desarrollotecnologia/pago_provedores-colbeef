@@ -62,9 +62,9 @@ def obtener_proveedor(
 def crear_proveedor(
     payload: ProveedorCreate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(require_admin),
+    current_user: Usuario = Depends(require_admin),
 ):
-    return svc.create_proveedor(db, payload)
+    return svc.create_proveedor(db, payload, current_user.id)
 
 
 @router.put("/{proveedor_id}", response_model=ProveedorResponse)
@@ -72,9 +72,9 @@ def actualizar_proveedor(
     proveedor_id: int,
     payload: ProveedorUpdate,
     db: Session = Depends(get_db),
-    _: Usuario = Depends(require_admin),
+    current_user: Usuario = Depends(require_admin),
 ):
-    return svc.update_proveedor(db, proveedor_id, payload)
+    return svc.update_proveedor(db, proveedor_id, payload, current_user.id)
 
 
 @router.delete("/{proveedor_id}", response_model=MessageResponse)
@@ -83,5 +83,5 @@ def desactivar_proveedor(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_admin),
 ):
-    svc.deactivate_proveedor(db, proveedor_id)
+    svc.deactivate_proveedor(db, proveedor_id, current_user.id)
     return MessageResponse(message=f"Proveedor {proveedor_id} desactivado")

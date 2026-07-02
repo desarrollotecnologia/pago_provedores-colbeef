@@ -145,6 +145,47 @@ export interface HistorialPagosResponse {
   pages: number;
 }
 
+export interface CambioCampo {
+  campo: string;
+  etiqueta: string;
+  anterior: string | null;
+  nuevo: string | null;
+}
+
+export interface CambioProveedorItem {
+  id: number;
+  registrado_en: string;
+  accion: string;
+  proveedor_id: number;
+  razon_social: string;
+  identificacion: string;
+  usuario_id: number;
+  usuario_nombre: string;
+  resumen: string;
+  cantidad_cambios: number;
+}
+
+export interface CambioProveedorDetalle extends CambioProveedorItem {
+  cambios: CambioCampo[];
+  snapshot: Record<string, unknown> | null;
+}
+
+export interface CambiosProveedorResponse {
+  resumen: {
+    fecha_desde: string;
+    fecha_hasta: string;
+    cantidad_cambios: number;
+    creaciones: number;
+    ediciones: number;
+    desactivaciones: number;
+  };
+  items: CambioProveedorItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
 export interface HistorialPagoDetalle {
   id: number;
   lote_id: number;
