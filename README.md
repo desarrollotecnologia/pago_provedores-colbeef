@@ -46,7 +46,9 @@ Swagger API: **http://localhost:8100/docs**
 | `stop.bat` | Detiene el servicio |
 | `restart.bat` | Reinicia |
 | `update.bat` | Actualiza deps y reinicia |
-| `install-autostart.bat` | Auto-arranque Windows |
+| `start-autostart.bat` | Arranque silencioso (sin navegador, para servidor) |
+| `install-autostart.bat` | Registra auto-arranque al reiniciar Windows (Admin) |
+| `uninstall-autostart.bat` | Quita el auto-arranque (Admin) |
 | `verify_db.bat` | Estado de la BD |
 
 ## Variables .env principales

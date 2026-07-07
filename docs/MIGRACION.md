@@ -34,6 +34,10 @@ Migrar datos: `mysqldump` + `mysql` import, luego `scripts\setup.bat --skip-exce
 
 `scripts\start.bat` → http://NUEVO_SERVIDOR:8100
 
-### 5. Auto-arranque
+### 5. Auto-arranque al reiniciar el servidor
 
-`scripts\install-autostart.bat` (como Administrador)
+1. Ejecutar **como Administrador**: `scripts\install-autostart.bat`
+2. Tras cada reinicio de Windows, ~90 s después arranca MySQL y la API (sin abrir navegador).
+3. Logs: `logs\autostart.log` y `logs\api.log`
+4. Probar sin reiniciar: `schtasks /Run /TN "PagoProveedoresColbeef"`
+5. Quitar: `scripts\uninstall-autostart.bat`
