@@ -23,7 +23,7 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENI
 )
 
 call :log "API no esta activa en puerto %PORT%. Ejecutando start-autostart.bat..."
-call "%ROOT%\scripts\start-autostart.bat" >> "%LOG%" 2>&1
+call "%ROOT%\scripts\start-autostart.bat"
 set RESULT=%ERRORLEVEL%
 
 if "%RESULT%"=="0" (

@@ -19,7 +19,7 @@ if exist "%BIN%\mysqld.exe" (
     if errorlevel 1 (
         echo Iniciando MySQL...
         start "" /B "%BIN%\mysqld.exe" --datadir="%DATA%"
-        timeout /t 4 /nobreak >nul
+        powershell -NoProfile -Command "Start-Sleep -Seconds 4" >nul 2>&1
     ) else (
         echo MySQL ya esta en ejecucion.
     )

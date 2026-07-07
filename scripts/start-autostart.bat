@@ -43,7 +43,7 @@ if !WAIT_COUNT! GEQ 30 (
     call :log "AVISO: MySQL no respondio en 60 s. Se intentara iniciar la API igualmente."
     goto start_api
 )
-timeout /t 2 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul 2>&1
 goto wait_mysql
 
 :mysql_ready
@@ -54,7 +54,7 @@ call :log "Iniciando API en puerto %PORT% (sin navegador, modo produccion)..."
 
 start "PagoProveedores-API" /MIN cmd /c "cd /d %ROOT%\backend && %ROOT%\venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port %PORT% >> %ROOT%\logs\api.log 2>&1"
 
-timeout /t 5 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 5" >nul 2>&1
 
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENING"') do (
     call :log "API activa en puerto %PORT% (PID %%a)."
