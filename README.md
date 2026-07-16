@@ -438,10 +438,12 @@ documentación.
 | `validate_excel.bat` | Valida o compara el Excel operativo |
 | `verify_deploy.bat` | Comprueba artefactos de despliegue |
 | `install_email_banner.bat` | Instala recursos gráficos del correo |
+| `install-autostart.bat` | Registra el autoarranque al reiniciar Windows (Admin) |
+| `start-autostart.bat` | Arranque silencioso sin navegador, para servidor |
 | `uninstall-autostart.bat` | Elimina la tarea programada de autoarranque |
-
-Los archivos `install-autostart.bat` y `start-autostart.bat` aparecen en
-documentación anterior, pero no están presentes en este repositorio.
+| `install-watchdog.bat` | Instala el vigilante que reinicia el servicio si cae |
+| `uninstall-watchdog.bat` | Elimina el vigilante |
+| `install-all-autostart.bat` | Instala autoarranque y vigilante en un solo paso |
 
 ## Calidad y pruebas
 
@@ -491,8 +493,6 @@ automática y administrar el proceso con un servicio supervisado.
 
 ### El backend no inicia
 
-- Verifique que existan los módulos indicados en
-  [Estado actual del repositorio](#estado-actual-del-repositorio).
 - Confirme que el entorno virtual esté activo.
 - Revise `DATABASE_URL` y que MySQL esté escuchando.
 - Compruebe que el puerto configurado no esté ocupado.
@@ -537,22 +537,10 @@ conceptos y ciudades puedan representarse en esa codificación.
 
 ## Estado actual del repositorio
 
-> **Importante:** la copia revisada está incompleta. Faltan estos módulos
-> importados por el backend:
->
-> - `backend/app/core/config.py`
-> - `backend/app/services/config_service.py`
->
-> Mientras no se recuperen o implementen, el backend no podrá iniciar y no es
-> posible garantizar que la instalación documentada termine correctamente.
+Limitaciones conocidas:
 
-También se identificaron estas limitaciones:
-
-- No hay migraciones Alembic configuradas.
-- Faltan los scripts de instalación y arranque automático mencionados en
-  documentación anterior.
-- `scripts/verify_deploy.bat` valida versiones antiguas y puede reportar un
-  fallo aunque el build actual sea correcto.
+- No hay migraciones Alembic configuradas; el esquema se crea con SQLAlchemy
+  y ajustes desde los seeders.
 - `scripts/update.bat` no compila el frontend ni aplica cambios de esquema;
   para una actualización integral se usa `scripts/update_server.bat`.
 
