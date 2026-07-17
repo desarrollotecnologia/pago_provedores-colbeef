@@ -5,23 +5,41 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.nit import (
+    TIPOS_IDENTIFICACION_NIT,
+    calcular_digito_verificacion_nit,
+    normalizar_numero_nit,
+)
 from app.models import Banco, LotePago, Pago, Proveedor, TipoCuenta, TipoIdentificacion
 from app.schemas.proveedores import ProveedorCreate, ProveedorUpdate
 from app.services import cambios_service
 
 
 def _apply_digito_regla(data: dict) -> None:
-    """Dígito de verificación: solo NIT; demás tipos = 0 (regla Excel)."""
+    """Calcula automáticamente el DV para NIT jurídico/natural; demás tipos = 0."""
     tipo_id = data.get("tipo_identificacion")
-    if tipo_id is not None and tipo_id != 3:
+    if tipo_id is None:
+        return
+    if tipo_id in TIPOS_IDENTIFICACION_NIT:
+        identificacion = normalizar_numero_nit(data.get("identificacion", ""))
+        try:
+            data["digito_verificacion"] = calcular_digito_verificacion_nit(identificacion)
+            data["identificacion"] = identificacion
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    else:
         data["digito_verificacion"] = 0
 
 
 def _validate_proveedor_data(data: dict) -> None:
     tipo_id = data.get("tipo_identificacion")
-    if tipo_id == 3 and data.get("digito_verificacion") is None:
+    if tipo_id in TIPOS_IDENTIFICACION_NIT and data.get("digito_verificacion") is None:
         raise HTTPException(status_code=400, detail="El NIT requiere dígito de verificación")
-    if tipo_id is not None and tipo_id != 3 and data.get("digito_verificacion") not in (0, None):
+    if (
+        tipo_id is not None
+        and tipo_id not in TIPOS_IDENTIFICACION_NIT
+        and data.get("digito_verificacion") not in (0, None)
+    ):
         raise HTTPException(
             status_code=400,
             detail="El dígito de verificación solo aplica a NIT; use 0 para otros tipos",
@@ -174,7 +192,17 @@ def update_proveedor(
     }
     tipo_id = merged["tipo_identificacion"]
     _apply_digito_regla(merged)
-    if "tipo_identificacion" in updates or "digito_verificacion" in updates or tipo_id != 3:
+    if (
+        tipo_id in TIPOS_IDENTIFICACION_NIT
+        and merged["identificacion"] != proveedor.identificacion
+    ):
+        updates["identificacion"] = merged["identificacion"]
+    if (
+        "identificacion" in updates
+        or "tipo_identificacion" in updates
+        or "digito_verificacion" in updates
+        or tipo_id not in TIPOS_IDENTIFICACION_NIT
+    ):
         updates["digito_verificacion"] = merged["digito_verificacion"]
 
     _validate_proveedor_data(merged)

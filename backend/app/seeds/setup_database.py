@@ -80,7 +80,7 @@ def _apply_schema_patches() -> None:
                 """
                 UPDATE proveedores
                 SET digito_verificacion = 0
-                WHERE tipo_identificacion != 3
+                WHERE tipo_identificacion NOT IN (3, 9)
                   AND (digito_verificacion IS NULL OR digito_verificacion != 0)
                 """
             )

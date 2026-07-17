@@ -45,6 +45,46 @@ def ensure_usability_table() -> None:
 
 
 @app.on_event("startup")
+def sync_tipos_identificacion() -> None:
+    """Sincroniza el catálogo y calcula el DV de los NIT existentes."""
+    from sqlalchemy import select
+
+    from app.core.database import SessionLocal
+    from app.core.nit import (
+        TIPOS_IDENTIFICACION_NIT,
+        calcular_digito_verificacion_nit,
+    )
+    from app.models import Proveedor, TipoIdentificacion
+    from app.seeds.seed_catalogos import TIPOS_IDENTIFICACION
+
+    db = SessionLocal()
+    try:
+        for codigo, descripcion in TIPOS_IDENTIFICACION:
+            tipo = db.get(TipoIdentificacion, codigo)
+            if tipo is None:
+                db.add(TipoIdentificacion(codigo=codigo, descripcion=descripcion))
+            elif tipo.descripcion != descripcion:
+                tipo.descripcion = descripcion
+
+        for proveedor in db.scalars(select(Proveedor)):
+            if proveedor.tipo_identificacion in TIPOS_IDENTIFICACION_NIT:
+                try:
+                    proveedor.digito_verificacion = calcular_digito_verificacion_nit(
+                        proveedor.identificacion
+                    )
+                except ValueError:
+                    pass
+            else:
+                proveedor.digito_verificacion = 0
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        print(f"[startup] No se pudo sincronizar tipos de identificación: {exc}")
+    finally:
+        db.close()
+
+
+@app.on_event("startup")
 def repair_lote_totals_on_startup() -> None:
     """Corrige importe_total desactualizado en lotes existentes."""
     from app.core.database import SessionLocal

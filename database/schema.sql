@@ -18,12 +18,18 @@ CREATE TABLE IF NOT EXISTS tipos_identificacion (
     descripcion VARCHAR(50)  NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO tipos_identificacion (codigo, descripcion) VALUES
+-- Códigos según formato bancario (Excel MODELO PAGO PROVEEDORES)
+INSERT INTO tipos_identificacion (codigo, descripcion) VALUES
     (1, 'Cédula de Ciudadanía'),
     (2, 'Cédula de Extranjería'),
-    (3, 'NIT'),
+    (3, 'NIT Jurídico'),
+    (4, 'Tarjeta de Identidad'),
     (5, 'Pasaporte'),
-    (9, 'Otro');
+    (6, 'NIT Extranjería'),
+    (7, 'Soc. Extranjera Sin NIT Colombia'),
+    (8, 'Fideicomiso'),
+    (9, 'NIT Natural')
+ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
 
 -- Tipos de cuenta
 CREATE TABLE IF NOT EXISTS tipos_cuenta (

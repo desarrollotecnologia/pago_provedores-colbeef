@@ -5,12 +5,17 @@ from app.core.database import SessionLocal
 from app.models import Configuracion, TipoCuenta, TipoIdentificacion
 from app.seeds.setup_database import create_resumen_view
 
+# Códigos según formato bancario (Excel MODELO PAGO PROVEEDORES)
 TIPOS_IDENTIFICACION = [
     (1, "Cédula de Ciudadanía"),
     (2, "Cédula de Extranjería"),
-    (3, "NIT"),
+    (3, "NIT Jurídico"),
+    (4, "Tarjeta de Identidad"),
     (5, "Pasaporte"),
-    (9, "Otro"),
+    (6, "NIT Extranjería"),
+    (7, "Soc. Extranjera Sin NIT Colombia"),
+    (8, "Fideicomiso"),
+    (9, "NIT Natural"),
 ]
 
 TIPOS_CUENTA = [
@@ -38,6 +43,9 @@ def seed_catalogos() -> None:
             )
             if not exists:
                 db.add(TipoIdentificacion(codigo=codigo, descripcion=descripcion))
+            elif exists.descripcion != descripcion:
+                # Corrige etiquetas antiguas (p. ej. "NIT" → "NIT Jurídico", "Otro" → "NIT Natural")
+                exists.descripcion = descripcion
 
         for codigo, descripcion in TIPOS_CUENTA:
             exists = db.scalar(select(TipoCuenta).where(TipoCuenta.codigo == codigo))

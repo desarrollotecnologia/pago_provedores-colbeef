@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from app.core.config import get_settings
+from app.core.nit import TIPOS_IDENTIFICACION_NIT, normalizar_numero_nit
 from app.models import Pago
 
 LINE_LENGTH_BASE = 281
@@ -28,19 +29,29 @@ def _digitos_identificacion(valor: str) -> str:
 
 
 def _tipo_registro(tipo_identificacion: int) -> str:
-    return "03" if tipo_identificacion == 3 else "01"
+    """Código de tipo de identificación del banco, en 2 dígitos (01-09)."""
+    return f"{int(tipo_identificacion):02d}"
 
 
 def _campo_identificacion_archivo(pago: Pago) -> str:
     """15 dígitos de identificación — sin dígito de verificación (formato banco Plan B)."""
-    id_num = _digitos_identificacion(pago.identificacion)
+    if pago.tipo_identificacion in TIPOS_IDENTIFICACION_NIT:
+        id_num = normalizar_numero_nit(pago.identificacion)
+    else:
+        id_num = _digitos_identificacion(pago.identificacion)
     return id_num.zfill(IDENTIFICACION_ARCHIVO_LENGTH)[-IDENTIFICACION_ARCHIVO_LENGTH:]
 
 
 def _campo_identificacion_referencia(pago: Pago) -> str:
     """16 dígitos para referencia en correos — NIT incluye dígito de verificación."""
-    id_num = _digitos_identificacion(pago.identificacion)
-    if pago.tipo_identificacion == 3 and pago.digito_verificacion is not None:
+    if pago.tipo_identificacion in TIPOS_IDENTIFICACION_NIT:
+        id_num = normalizar_numero_nit(pago.identificacion)
+    else:
+        id_num = _digitos_identificacion(pago.identificacion)
+    if (
+        pago.tipo_identificacion in TIPOS_IDENTIFICACION_NIT
+        and pago.digito_verificacion is not None
+    ):
         id_num = id_num + str(pago.digito_verificacion)
     return id_num.zfill(REFERENCIA_CORREO_LENGTH)[-REFERENCIA_CORREO_LENGTH:]
 

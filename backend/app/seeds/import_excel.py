@@ -9,10 +9,15 @@ from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 from app.core.config import get_settings
 from app.core.database import SessionLocal
+from app.core.nit import (
+    TIPOS_IDENTIFICACION_NIT,
+    calcular_digito_verificacion_nit,
+    normalizar_numero_nit,
+)
 from app.models import Banco, CuentaOrdenante, OficinaBanco, Proveedor, TipoCuenta, TipoIdentificacion
 
 BATCH_SIZE = 500
-TIPOS_ID_VALIDOS = {1, 2, 3, 5, 9}
+TIPOS_ID_VALIDOS = {1, 2, 3, 4, 5, 6, 7, 8, 9}
 TIPOS_CUENTA_VALIDOS = {1, 2}
 
 
@@ -45,12 +50,19 @@ def _clean_text(value) -> str:
     return str(value).strip()
 
 
-def _normalize_digito(tipo_id: int | None, digito_v) -> int | None:
-    """Regla Excel: dígito solo para NIT; cualquier otro tipo es 0."""
+def _normalize_digito(
+    tipo_id: int | None, digito_v, identificacion: str | None = None
+) -> int | None:
+    """Calcula el DV para NIT; conserva compatibilidad si aún no hay identificación."""
     if tipo_id is None:
         return None
-    if tipo_id != 3:
+    if tipo_id not in TIPOS_IDENTIFICACION_NIT:
         return 0
+    if identificacion:
+        try:
+            return calcular_digito_verificacion_nit(identificacion)
+        except ValueError:
+            return None
     d = _to_int(digito_v)
     return d if d is not None else None
 
@@ -208,7 +220,11 @@ def _import_proveedores(db, wb: xlrd.Book) -> tuple[int, int]:
     for row_idx in range(2, sh.nrows):
         identificacion = _to_str_id(sh.cell_value(row_idx, 1))
         tipo_id = _to_int(sh.cell_value(row_idx, 2))
-        digito_v = _normalize_digito(tipo_id, sh.cell_value(row_idx, 3))
+        if tipo_id in TIPOS_IDENTIFICACION_NIT:
+            identificacion = normalizar_numero_nit(identificacion)
+        digito_v = _normalize_digito(
+            tipo_id, sh.cell_value(row_idx, 3), identificacion
+        )
         razon_social = _clean_text(sh.cell_value(row_idx, 4))
         forma_pago = _to_int(sh.cell_value(row_idx, 5)) or 1
         banco = _to_int(sh.cell_value(row_idx, 6))
@@ -236,7 +252,7 @@ def _import_proveedores(db, wb: xlrd.Book) -> tuple[int, int]:
             omitted += 1
             continue
 
-        if tipo_id == 3 and digito_v is None:
+        if tipo_id in TIPOS_IDENTIFICACION_NIT and digito_v is None:
             omitted += 1
             continue
 

@@ -5,6 +5,7 @@ import StatusBadge from "../components/StatusBadge";
 import { track } from "../telemetry/tracker";
 import type { CatalogoItem, HistorialPagoDetalle, HistorialPagosResponse } from "../types";
 import { formatDate, formatMoney, offsetDateISO, todayISO } from "../utils/format";
+import { TIPOS_IDENTIFICACION_NIT } from "../utils/nit";
 
 function isEmptyValue(value: React.ReactNode): boolean {
   if (value == null) return true;
@@ -380,7 +381,8 @@ export default function HistorialPagos() {
                     <p className="pago-detalle-eyebrow">Pago #{detalle.id}</p>
                     <h3 className="pago-detalle-title">{detalle.razon_social}</h3>
                     <p className="pago-detalle-subtitle">
-                      {detalle.tipo_identificacion === 3 && detalle.digito_verificacion != null
+                      {TIPOS_IDENTIFICACION_NIT.has(detalle.tipo_identificacion) &&
+                      detalle.digito_verificacion != null
                         ? `NIT ${detalle.identificacion}-${detalle.digito_verificacion}`
                         : `${labelTipo(detalle.tipo_identificacion, tiposId)} ${detalle.identificacion}`}
                     </p>

@@ -1,6 +1,11 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ApiError, api } from "../api/client";
 import type { BancoCatalogo, CatalogoItem, Proveedor } from "../types";
+import {
+  calcularDigitoVerificacionNit,
+  normalizarNumeroNit,
+  TIPOS_IDENTIFICACION_NIT,
+} from "../utils/nit";
 
 interface ProveedorFormProps {
   initial?: Proveedor | null;
@@ -26,6 +31,10 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const esNit = TIPOS_IDENTIFICACION_NIT.has(form.tipo_identificacion);
+  const digitoVerificacion = esNit
+    ? calcularDigitoVerificacionNit(form.identificacion)
+    : 0;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,12 +42,8 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
     setError("");
     const payload = {
       ...form,
-      digito_verificacion:
-        form.tipo_identificacion === 3
-          ? form.digito_verificacion
-            ? parseInt(form.digito_verificacion, 10)
-            : null
-          : 0,
+      identificacion: esNit ? normalizarNumeroNit(form.identificacion) : form.identificacion,
+      digito_verificacion: digitoVerificacion,
       cod_oficina: form.cod_oficina.trim() || null,
       email: form.email || null,
     };
@@ -85,13 +90,15 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
                 required
               />
             </div>
-            {form.tipo_identificacion === 3 && (
+            {esNit && (
               <div className="form-group">
-                <label>Dígito verificación</label>
+                <label>Dígito verificación (automático)</label>
                 <input
-                  value={form.digito_verificacion}
-                  onChange={(e) => setForm({ ...form, digito_verificacion: e.target.value })}
+                  value={digitoVerificacion ?? ""}
+                  placeholder={form.identificacion ? "NIT inválido" : "Ingrese el NIT"}
                   maxLength={1}
+                  readOnly
+                  aria-label="Dígito de verificación calculado automáticamente"
                 />
               </div>
             )}
@@ -271,7 +278,8 @@ export default function Proveedores() {
                     <tr key={p.id}>
                       <td>
                         {p.identificacion}
-                        {p.tipo_identificacion === 3 && p.digito_verificacion != null
+                        {TIPOS_IDENTIFICACION_NIT.has(p.tipo_identificacion) &&
+                        p.digito_verificacion != null
                           ? `-${p.digito_verificacion}`
                           : ""}
                       </td>

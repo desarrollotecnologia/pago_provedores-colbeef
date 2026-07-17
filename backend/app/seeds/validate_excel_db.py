@@ -13,6 +13,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import get_settings
 from app.core.database import SessionLocal
+from app.core.nit import TIPOS_IDENTIFICACION_NIT
 from app.models import Banco, Proveedor
 from app.seeds.import_excel import (
     TIPOS_CUENTA_VALIDOS,
@@ -24,7 +25,17 @@ from app.seeds.import_excel import (
 )
 
 TIPOS_CUENTA_LABEL = {1: "Ahorros", 2: "Corriente"}
-TIPOS_ID_LABEL = {1: "CC", 2: "CE", 3: "NIT", 5: "Pasaporte", 9: "Otro"}
+TIPOS_ID_LABEL = {
+    1: "CC",
+    2: "CE",
+    3: "NIT Jurídico",
+    4: "TI",
+    5: "Pasaporte",
+    6: "NIT Extranjería",
+    7: "Soc. Extranjera Sin NIT",
+    8: "Fideicomiso",
+    9: "NIT Natural",
+}
 
 
 @dataclass
@@ -71,7 +82,9 @@ def _load_excel_rows(path: Path) -> tuple[list[dict], list[dict], set[int]]:
     for row_idx in range(2, sh.nrows):
         identificacion = _to_str_id(sh.cell_value(row_idx, 1))
         tipo_id = _to_int(sh.cell_value(row_idx, 2))
-        digito_v = _normalize_digito(tipo_id, sh.cell_value(row_idx, 3))
+        digito_v = _normalize_digito(
+            tipo_id, sh.cell_value(row_idx, 3), identificacion
+        )
         razon_social = _clean_text(sh.cell_value(row_idx, 4)).upper()
         forma_pago = _to_int(sh.cell_value(row_idx, 5)) or 1
         banco = _to_int(sh.cell_value(row_idx, 6))
@@ -198,9 +211,15 @@ def validate(excel_path: str | None = None) -> ValidationReport:
 
         for prov in db_proveedores:
             issues: list[str] = []
-            if prov.tipo_identificacion == 3 and prov.digito_verificacion is None:
+            if (
+                prov.tipo_identificacion in TIPOS_IDENTIFICACION_NIT
+                and prov.digito_verificacion is None
+            ):
                 issues.append("NIT sin dígito de verificación")
-            if prov.tipo_identificacion != 3 and prov.digito_verificacion != 0:
+            if (
+                prov.tipo_identificacion not in TIPOS_IDENTIFICACION_NIT
+                and prov.digito_verificacion != 0
+            ):
                 issues.append("Dígito de verificación debe ser 0 (solo aplica a NIT)")
             if prov.banco_codigo not in bancos_db:
                 issues.append(f"Banco {prov.banco_codigo} no existe en catálogo")
