@@ -26,7 +26,8 @@ indicadores operativos.
 
 - Inicio de sesión mediante JWT y control de acceso por roles.
 - Administración, búsqueda y desactivación lógica de proveedores.
-- Catálogos de bancos, oficinas, tipos de cuenta y tipos de identificación.
+- Catálogos bancarios completos, incluidos los nueve tipos de identificación.
+- Cálculo automático del dígito de verificación DIAN para proveedores con NIT.
 - Creación y gestión de lotes de pago.
 - Registro de proveedores, conceptos e importes en cada lote.
 - Generación y descarga del archivo plano requerido por el banco.
@@ -339,6 +340,51 @@ El sistema trabaja con MySQL y modela las siguientes entidades principales:
 
 También existe una vista de resumen de lotes: `vw_resumen_lotes`.
 
+### Tipos de identificación
+
+El catálogo usa los códigos definidos por el formato bancario:
+
+| Código | Descripción |
+|---:|---|
+| `01` | Cédula de Ciudadanía |
+| `02` | Cédula de Extranjería |
+| `03` | NIT Jurídico |
+| `04` | Tarjeta de Identidad |
+| `05` | Pasaporte |
+| `06` | NIT Extranjería |
+| `07` | Sociedad Extranjera Sin NIT Colombia |
+| `08` | Fideicomiso |
+| `09` | NIT Natural |
+
+El frontend obtiene este catálogo desde `/api/catalogos/tipos-identificacion`;
+no mantiene una lista independiente. Al iniciar el backend, los códigos y sus
+descripciones se sincronizan con MySQL para incorporar opciones faltantes y
+corregir etiquetas antiguas.
+
+### Dígito de verificación del NIT
+
+Para `03 — NIT Jurídico` y `09 — NIT Natural`, el sistema calcula
+automáticamente el dígito de verificación mediante el algoritmo de la DIAN:
+
+- El usuario solo necesita ingresar el número del NIT.
+- El campo de dígito de verificación es de solo lectura.
+- Se aceptan valores sin formato (`900373913`) o con puntos y DV
+  (`900.373.913-4`).
+- El NIT se guarda normalizado, sin puntos, guion ni DV.
+- El backend vuelve a calcular el DV y no confía en el valor enviado por el
+  navegador.
+- Los proveedores existentes con tipo `03` o `09` se actualizan al iniciar la
+  aplicación.
+- Para los demás tipos de identificación, el DV se almacena como `0`.
+
+Ejemplo:
+
+```text
+NIT ingresado:           900373913
+Dígito calculado:        4
+Representación completa: 900373913-4
+```
+
 ### Inicialización manual
 
 Desde la raíz del proyecto:
@@ -384,7 +430,9 @@ impone actualmente una validación que limite la fecha al viernes.
 
 El TXT bancario se genera con saltos de línea CRLF, codificación Latin-1 y
 registros base de 281 caracteres. No cambie su formato sin validarlo con la
-entidad bancaria.
+entidad bancaria. Cada registro conserva el código real del tipo de
+identificación (`01` a `09`); los NIT se escriben sin el dígito de verificación
+en el campo de identificación del archivo, según el formato implementado.
 
 ## API y autenticación
 
