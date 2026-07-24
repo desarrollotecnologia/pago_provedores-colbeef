@@ -12,7 +12,7 @@ interface ProveedorFormProps {
   bancos: BancoCatalogo[];
   tiposId: CatalogoItem[];
   tiposCuenta: CatalogoItem[];
-  onSave: () => void;
+  onSave: (saved: { identificacion: string; razon_social: string }) => void;
   onClose: () => void;
 }
 
@@ -53,7 +53,10 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
       } else {
         await api.crearProveedor(payload);
       }
-      onSave();
+      onSave({
+        identificacion: payload.identificacion,
+        razon_social: form.razon_social.trim(),
+      });
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Error al guardar");
@@ -334,7 +337,17 @@ export default function Proveedores() {
           bancos={bancos}
           tiposId={tiposId}
           tiposCuenta={tiposCuenta}
-          onSave={load}
+          onSave={(saved) => {
+            const term = saved.identificacion || saved.razon_social;
+            setQ(term);
+            setSearch(term);
+            setPage(1);
+            setMessage(
+              editing === "new"
+                ? `Proveedor guardado. Mostrando resultado de “${term}”.`
+                : "Proveedor actualizado."
+            );
+          }}
           onClose={() => setEditing(null)}
         />
       )}

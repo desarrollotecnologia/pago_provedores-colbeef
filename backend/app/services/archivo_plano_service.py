@@ -67,19 +67,23 @@ def _campo_identificacion(pago: Pago) -> str:
 
 
 def _ruta_pago(pago: Pago) -> str:
-    """Forma de pago + banco/oficina (5 o 9 caracteres)."""
+    """Forma de pago (2 dígitos) + banco/oficina.
+
+    El modelo Excel/banco usa siempre 2 dígitos en forma de pago (ej. 01).
+    Sin oficina: 6 caracteres (01 + 0051). Con oficina: 10 (01 + 0051 + oficina).
+    """
+    forma = f"{int(pago.forma_pago):02d}"
+    banco = f"{int(pago.banco_codigo):04d}"
     if pago.cod_oficina and str(pago.cod_oficina).strip():
-        return (
-            f"{pago.forma_pago}"
-            f"{int(pago.banco_codigo):04d}"
-            f"{str(pago.cod_oficina).zfill(4)[-4:]}"
-        )
-    return f"{pago.forma_pago}{int(pago.banco_codigo):04d}"
+        oficina = str(pago.cod_oficina).zfill(4)[-4:]
+        return f"{forma}{banco}{oficina}"
+    return f"{forma}{banco}"
 
 
 def _parte_importe(ruta: str, cuenta: str, centavos: int) -> tuple[str, str]:
     cuenta = cuenta.strip()
-    if len(ruta) == 9:
+    # Con oficina: forma(2) + banco(4) + oficina(4) = 10
+    if len(ruta) == 10:
         combined = ruta + cuenta
         parte2 = combined[:37]
         overflow = combined[37:]
@@ -93,6 +97,7 @@ def _parte_importe(ruta: str, cuenta: str, centavos: int) -> tuple[str, str]:
             parte3 = body.ljust(30, "0")[:30]
         return parte2, parte3
 
+    # Sin oficina: forma(2) + banco(4) = 6 → relleno hasta posición 22 de cuenta
     combined = ruta + "0" * (CUENTA_START_POS - len(ruta)) + cuenta
     parte2 = combined[:37].ljust(37)[:37]
     overflow = combined[37:]
