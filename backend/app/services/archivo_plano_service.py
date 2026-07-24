@@ -63,8 +63,8 @@ def _forma_pago_plano(pago: Pago) -> str:
 
 
 def _tipo_cuenta_plano(pago: Pago) -> str:
-    """Tipo cuenta como .Text en hoja Pagos (sin cero a la izquierda)."""
-    return str(int(pago.tipo_cuenta))
+    """Tipo cuenta con formato Excel '00' (01 ahorros, 02 corriente)."""
+    return f"{int(pago.tipo_cuenta):02d}"
 
 
 def _importe_plano(importe: Decimal) -> str:

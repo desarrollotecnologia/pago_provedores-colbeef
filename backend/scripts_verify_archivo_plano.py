@@ -31,11 +31,11 @@ def _pago(**kwargs):
 
 
 def main() -> None:
-    # Línea de referencia del usuario (modelo Excel), prefijo hasta importe
+    # Línea de referencia del Excel (tipo cuenta con formato 00 → '02')
     excel_prefix = (
         "01000000091492808010051"
         "0000000000000000"
-        "2"
+        "02"
         "046570046204     "
         "000000300000000"
     )
@@ -54,7 +54,7 @@ def main() -> None:
     assert "ANTICIPO" in linea
     assert "\n" not in linea and "\r" not in linea
 
-    # NIT con DV distinto de 0: debe ir DV + forma de 1 dígito
+    # NIT con DV distinto de 0: DV + forma 1 dígito + banco 4
     nit = build_payment_line(
         _pago(
             tipo_identificacion=3,
@@ -67,6 +67,7 @@ def main() -> None:
         ciudad="BOGOTA",
     )
     assert nit.startswith("03000000900373913410007"), nit[:30]
+    assert "01" == nit[39:41], nit[39:45]  # tipo cuenta 01
 
     print("OK — generador alineado con macro Planocash / Excel BBVA")
     print("Longitud línea:", len(linea))
