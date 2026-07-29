@@ -87,6 +87,28 @@ def _apply_schema_patches() -> None:
         )
         conn.commit()
 
+        # Permite varias facturas en un solo pago (texto unido por comas)
+        col = conn.execute(
+            text(
+                """
+                SELECT CHARACTER_MAXIMUM_LENGTH, DATA_TYPE
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'pagos'
+                  AND COLUMN_NAME = 'numero_factura'
+                """
+            )
+        ).first()
+        if col and (
+            (col[1] or "").lower() in ("varchar", "char")
+            and (col[0] is None or int(col[0]) < 500)
+        ):
+            conn.execute(
+                text("ALTER TABLE pagos MODIFY COLUMN numero_factura VARCHAR(500) NULL")
+            )
+            conn.commit()
+            print("  Columna pagos.numero_factura ampliada a VARCHAR(500).")
+
         if not conn.execute(
             text(
                 """

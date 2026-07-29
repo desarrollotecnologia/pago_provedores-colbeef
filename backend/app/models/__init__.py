@@ -187,7 +187,7 @@ class Pago(Base):
     concepto2: Mapped[str | None] = mapped_column(String(80), nullable=True)
     concepto3: Mapped[str | None] = mapped_column(String(80), nullable=True)
     concepto4: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    numero_factura: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    numero_factura: Mapped[str | None] = mapped_column(String(500), nullable=True)
     email_destino: Mapped[str | None] = mapped_column(String(255), nullable=True)
     referencia_16: Mapped[str | None] = mapped_column(String(20), nullable=True)
     referencia_11: Mapped[str | None] = mapped_column(String(20), nullable=True)

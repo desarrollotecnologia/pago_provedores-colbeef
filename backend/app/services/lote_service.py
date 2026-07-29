@@ -217,7 +217,10 @@ def actualizar_pago(db: Session, pago_id: int, data: PagoItemUpdate) -> Pago:
     lote = get_lote(db, pago.lote_id)
     _verificar_lote_editable(lote)
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    # facturas se normaliza a numero_factura en el schema; no es columna
+    updates.pop("facturas", None)
+    for key, value in updates.items():
         setattr(pago, key, value)
 
     _validar_pago_completo(pago)

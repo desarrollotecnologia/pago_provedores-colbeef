@@ -77,6 +77,7 @@ export interface Pago {
   concepto3: string | null;
   concepto4: string | null;
   numero_factura: string | null;
+  facturas?: string[];
   email_destino: string | null;
   referencia_16: string | null;
   referencia_11: string | null;
@@ -213,6 +214,7 @@ export interface HistorialPagoDetalle {
   concepto3: string | null;
   concepto4: string | null;
   numero_factura: string | null;
+  facturas?: string[];
   email_destino: string | null;
   referencia_16: string | null;
   referencia_11: string | null;

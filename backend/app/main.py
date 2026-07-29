@@ -45,6 +45,34 @@ def ensure_usability_table() -> None:
 
 
 @app.on_event("startup")
+def ensure_pagos_factura_column() -> None:
+    """Amplía numero_factura para permitir varias facturas por pago."""
+    from sqlalchemy import text
+
+    with engine.connect() as conn:
+        col = conn.execute(
+            text(
+                """
+                SELECT CHARACTER_MAXIMUM_LENGTH, DATA_TYPE
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'pagos'
+                  AND COLUMN_NAME = 'numero_factura'
+                """
+            )
+        ).first()
+        if col and (
+            (col[1] or "").lower() in ("varchar", "char")
+            and (col[0] is None or int(col[0]) < 500)
+        ):
+            conn.execute(
+                text("ALTER TABLE pagos MODIFY COLUMN numero_factura VARCHAR(500) NULL")
+            )
+            conn.commit()
+            print("[startup] pagos.numero_factura ampliada a VARCHAR(500)")
+
+
+@app.on_event("startup")
 def sync_tipos_identificacion() -> None:
     """Sincroniza el catálogo y calcula el DV de los NIT existentes."""
     from sqlalchemy import select

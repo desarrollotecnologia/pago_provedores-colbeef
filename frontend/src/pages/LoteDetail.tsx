@@ -11,6 +11,7 @@ import type { Lote, Pago, Proveedor } from "../types";
 import { formatMoney } from "../utils/format";
 import {
   camposFaltantesPago,
+  facturasFromPago,
   mensajeCamposFaltantes,
   pagoIncompleto,
   type PagoFormData,
@@ -18,7 +19,7 @@ import {
 
 const EMPTY_PAGO_FORM: PagoFormData = {
   importe: "",
-  numero_factura: "",
+  facturas: [""],
   concepto1: "",
   email_destino: "",
 };
@@ -87,9 +88,10 @@ export default function LoteDetail() {
     setError("");
     setShowAdd(false);
     setEditingPago(pago);
+    const facts = facturasFromPago(pago);
     setPagoForm({
       importe: pago.importe,
-      numero_factura: pago.numero_factura ?? "",
+      facturas: facts.length ? facts : [""],
       concepto1: pago.concepto1 ?? "",
       email_destino: pago.email_destino ?? "",
     });
@@ -109,6 +111,28 @@ export default function LoteDetail() {
     }));
   };
 
+  const updateFactura = (index: number, value: string) => {
+    setPagoForm((f) => {
+      const facturas = [...f.facturas];
+      facturas[index] = value;
+      return { ...f, facturas };
+    });
+  };
+
+  const addFacturaField = () => {
+    setPagoForm((f) => ({ ...f, facturas: [...f.facturas, ""] }));
+  };
+
+  const removeFacturaField = (index: number) => {
+    setPagoForm((f) => {
+      const facturas = f.facturas.filter((_, i) => i !== index);
+      return { ...f, facturas: facturas.length ? facturas : [""] };
+    });
+  };
+
+  const facturasPayload = () =>
+    pagoForm.facturas.map((f) => f.trim()).filter(Boolean);
+
   const handleAddPago = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedProv) return;
@@ -122,7 +146,7 @@ export default function LoteDetail() {
       await api.agregarPago(loteId, {
         proveedor_id: selectedProv.id,
         importe: parseFloat(pagoForm.importe),
-        numero_factura: pagoForm.numero_factura.trim(),
+        facturas: facturasPayload(),
         concepto1: pagoForm.concepto1.trim(),
         email_destino: pagoForm.email_destino.trim(),
       });
@@ -146,7 +170,7 @@ export default function LoteDetail() {
     try {
       await api.actualizarPago(editingPago.id, {
         importe: parseFloat(pagoForm.importe),
-        numero_factura: pagoForm.numero_factura.trim(),
+        facturas: facturasPayload(),
         concepto1: pagoForm.concepto1.trim(),
         email_destino: pagoForm.email_destino.trim(),
       });
@@ -564,7 +588,7 @@ export default function LoteDetail() {
                 </div>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label>Importe *</label>
+                    <label>Importe total *</label>
                     <input
                       type="number"
                       step="0.01"
@@ -574,13 +598,37 @@ export default function LoteDetail() {
                       required
                     />
                   </div>
-                  <div className="form-group">
-                    <label>N° factura *</label>
-                    <input
-                      value={pagoForm.numero_factura}
-                      onChange={(e) => setPagoForm({ ...pagoForm, numero_factura: e.target.value })}
-                      required
-                    />
+                  <div className="form-group full">
+                    <label>Facturas *</label>
+                    <p className="hint" style={{ margin: "0 0 0.5rem", fontSize: "0.8rem" }}>
+                      Puede agregar varias. El importe es el total de todas. El correo listará cada factura.
+                    </p>
+                    {pagoForm.facturas.map((f, idx) => (
+                      <div
+                        key={`add-fv-${idx}`}
+                        style={{ display: "flex", gap: "0.5rem", marginBottom: "0.4rem" }}
+                      >
+                        <input
+                          value={f}
+                          onChange={(e) => updateFactura(idx, e.target.value)}
+                          placeholder={`Factura ${idx + 1}`}
+                          required={idx === 0}
+                          style={{ flex: 1 }}
+                        />
+                        {pagoForm.facturas.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => removeFacturaField(idx)}
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" className="btn btn-outline btn-sm" onClick={addFacturaField}>
+                      + Agregar factura
+                    </button>
                   </div>
                   <div className="form-group">
                     <label>Concepto *</label>
@@ -625,7 +673,7 @@ export default function LoteDetail() {
             <form onSubmit={handleEditPago}>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Importe *</label>
+                  <label>Importe total *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -635,13 +683,37 @@ export default function LoteDetail() {
                     required
                   />
                 </div>
-                <div className="form-group">
-                  <label>N° factura *</label>
-                  <input
-                    value={pagoForm.numero_factura}
-                    onChange={(e) => setPagoForm({ ...pagoForm, numero_factura: e.target.value })}
-                    required
-                  />
+                <div className="form-group full">
+                  <label>Facturas *</label>
+                  <p className="hint" style={{ margin: "0 0 0.5rem", fontSize: "0.8rem" }}>
+                    Puede agregar varias. El importe es el total de todas. El correo listará cada factura.
+                  </p>
+                  {pagoForm.facturas.map((f, idx) => (
+                    <div
+                      key={`edit-fv-${idx}`}
+                      style={{ display: "flex", gap: "0.5rem", marginBottom: "0.4rem" }}
+                    >
+                      <input
+                        value={f}
+                        onChange={(e) => updateFactura(idx, e.target.value)}
+                        placeholder={`Factura ${idx + 1}`}
+                        required={idx === 0}
+                        style={{ flex: 1 }}
+                      />
+                      {pagoForm.facturas.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => removeFacturaField(idx)}
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-outline btn-sm" onClick={addFacturaField}>
+                    + Agregar factura
+                  </button>
                 </div>
                 <div className="form-group">
                   <label>Concepto *</label>
