@@ -2,7 +2,7 @@ import math
 from datetime import date
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.nit import (
@@ -108,12 +108,22 @@ def list_proveedores(
         stmt = stmt.where(Proveedor.activo.is_(activo))
 
     if q:
-        term = f"%{q.strip().upper()}%"
+        raw = q.strip()
+        term = f"%{raw.upper()}%"
+        compact = "".join(raw.split()).upper()
+        compact_term = f"%{compact}%" if compact else term
+        tokens = [token.upper() for token in raw.split() if token.strip()]
+        nombre = func.upper(Proveedor.razon_social)
+        nombre_compacto = func.replace(nombre, " ", "")
         stmt = stmt.where(
             or_(
-                Proveedor.razon_social.like(term),
-                Proveedor.identificacion.like(f"%{q.strip()}%"),
-                Proveedor.numero_cuenta.like(f"%{q.strip()}%"),
+                nombre.like(term),
+                nombre_compacto.like(compact_term),
+                and_(*(nombre.like(f"%{token}%") for token in tokens)) if tokens else False,
+                Proveedor.identificacion.like(f"%{raw}%"),
+                func.replace(Proveedor.identificacion, " ", "").like(compact_term),
+                Proveedor.numero_cuenta.like(f"%{raw}%"),
+                func.replace(Proveedor.numero_cuenta, " ", "").like(compact_term),
             )
         )
 
