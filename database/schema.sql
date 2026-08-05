@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS tipos_cuenta (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO tipos_cuenta (codigo, descripcion) VALUES
-    (1, 'Ahorros'),
-    (2, 'Corriente');
+    (1, 'Corriente'),
+    (2, 'Ahorros');
 
 -- Vista resumen (se crea después de las tablas principales vía seed)

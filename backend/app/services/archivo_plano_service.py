@@ -63,7 +63,7 @@ def _forma_pago_plano(pago: Pago) -> str:
 
 
 def _tipo_cuenta_plano(pago: Pago) -> str:
-    """Tipo cuenta con formato Excel '00' (01 ahorros, 02 corriente)."""
+    """Tipo cuenta con formato Excel '00' (01 corriente, 02 ahorros)."""
     return f"{int(pago.tipo_cuenta):02d}"
 
 

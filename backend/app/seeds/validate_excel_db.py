@@ -24,7 +24,7 @@ from app.seeds.import_excel import (
     _to_str_id,
 )
 
-TIPOS_CUENTA_LABEL = {1: "Ahorros", 2: "Corriente"}
+TIPOS_CUENTA_LABEL = {1: "Corriente", 2: "Ahorros"}
 TIPOS_ID_LABEL = {
     1: "CC",
     2: "CE",

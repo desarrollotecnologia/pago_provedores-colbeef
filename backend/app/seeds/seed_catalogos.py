@@ -18,9 +18,11 @@ TIPOS_IDENTIFICACION = [
     (9, "NIT Natural"),
 ]
 
+# Nota de columna "Tipo Cuenta" del Excel MODELO PAGO PROVEEDORES (BBVA):
+# 01 = Cuenta corriente, 02 = Cuenta de ahorros
 TIPOS_CUENTA = [
-    (1, "Ahorros"),
-    (2, "Corriente"),
+    (1, "Corriente"),
+    (2, "Ahorros"),
 ]
 
 CONFIGURACION_INICIAL = [
@@ -51,6 +53,9 @@ def seed_catalogos() -> None:
             exists = db.scalar(select(TipoCuenta).where(TipoCuenta.codigo == codigo))
             if not exists:
                 db.add(TipoCuenta(codigo=codigo, descripcion=descripcion))
+            elif exists.descripcion != descripcion:
+                # Corrige etiquetas invertidas respecto al Excel BBVA
+                exists.descripcion = descripcion
 
         for clave, valor, descripcion in CONFIGURACION_INICIAL:
             exists = db.scalar(select(Configuracion).where(Configuracion.clave == clave))

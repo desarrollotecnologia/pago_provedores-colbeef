@@ -24,7 +24,7 @@ function ProveedorForm({ initial, bancos, tiposId, tiposCuenta, onSave, onClose 
     razon_social: initial?.razon_social ?? "",
     forma_pago: initial?.forma_pago ?? 1,
     banco_codigo: initial?.banco_codigo ?? bancos[0]?.codigo ?? 1,
-    tipo_cuenta: initial?.tipo_cuenta ?? 1,
+    tipo_cuenta: initial?.tipo_cuenta ?? 2,
     numero_cuenta: initial?.numero_cuenta ?? "",
     cod_oficina: initial?.cod_oficina ?? "",
     email: initial?.email ?? "",

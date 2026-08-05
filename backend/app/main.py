@@ -82,8 +82,8 @@ def sync_tipos_identificacion() -> None:
         TIPOS_IDENTIFICACION_NIT,
         calcular_digito_verificacion_nit,
     )
-    from app.models import Proveedor, TipoIdentificacion
-    from app.seeds.seed_catalogos import TIPOS_IDENTIFICACION
+    from app.models import Proveedor, TipoCuenta, TipoIdentificacion
+    from app.seeds.seed_catalogos import TIPOS_CUENTA, TIPOS_IDENTIFICACION
 
     db = SessionLocal()
     try:
@@ -91,6 +91,13 @@ def sync_tipos_identificacion() -> None:
             tipo = db.get(TipoIdentificacion, codigo)
             if tipo is None:
                 db.add(TipoIdentificacion(codigo=codigo, descripcion=descripcion))
+            elif tipo.descripcion != descripcion:
+                tipo.descripcion = descripcion
+
+        for codigo, descripcion in TIPOS_CUENTA:
+            tipo = db.get(TipoCuenta, codigo)
+            if tipo is None:
+                db.add(TipoCuenta(codigo=codigo, descripcion=descripcion))
             elif tipo.descripcion != descripcion:
                 tipo.descripcion = descripcion
 

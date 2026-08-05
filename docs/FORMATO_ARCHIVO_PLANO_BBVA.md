@@ -16,7 +16,7 @@ El programa replica esta estructura en
 | 4 | Forma de pago | 1 | Columna E (`1` abono cuenta; **no** se rellena a 2) |
 | 5 | Banco | 4 | Columna F, formato `0000` (si forma ≠ 1 → `0013`) |
 | 6 | Cuenta BBVA | 16 | Ceros si el banco no es BBVA (`0013`) |
-| 7 | Tipo cuenta ACH | 2 | Columna G, formato `00` (`01`/`02`) |
+| 7 | Tipo cuenta ACH | 2 | Columna G, formato `00` (`01` corriente, `02` ahorros) |
 | 8 | Número cuenta ACH | 17 | Columna H, relleno con **espacios a la derecha** |
 | 9 | Importe | 15 | Entero + 2 decimales, sin punto, ceros a la izquierda |
 | 10 | Año / Mes / Día | 4+2+2 | Para forma `1`: `0000` `00` `00` |
