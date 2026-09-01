@@ -69,6 +69,29 @@ def main() -> None:
     assert nit.startswith("03000000900373913410007"), nit[:30]
     assert "01" == nit[39:41], nit[39:45]  # tipo cuenta 01
 
+    # BBVA (banco 0013): bloque Cuentabbva de 16 caracteres sin cero de relleno al final
+    bbva_cases = [
+        ("232217414", 2, "0232000200217414"),
+        ("474012663", 1, "0474000100012663"),
+        ("018117200", 2, "0018000200117200"),
+    ]
+    for numero_cuenta, tipo_cuenta, cuentabbva_esperada in bbva_cases:
+        linea_bbva = build_payment_line(
+            _pago(
+                banco_codigo=13,
+                tipo_cuenta=tipo_cuenta,
+                numero_cuenta=numero_cuenta,
+            ),
+            ciudad="BOGOTA",
+        )
+        assert linea_bbva[19:23] == "0013", linea_bbva[19:23]
+        assert linea_bbva[23:39] == cuentabbva_esperada, (
+            f"cuenta={numero_cuenta} tipo={tipo_cuenta}\n"
+            f"prog ={linea_bbva[23:39]!r}\nexcel={cuentabbva_esperada!r}"
+        )
+        assert linea_bbva[39:41] == "00", linea_bbva[39:41]
+        assert linea_bbva[41:58] == "0" * 17, linea_bbva[41:58]
+
     print("OK — generador alineado con macro Planocash / Excel BBVA")
     print("Longitud línea:", len(linea))
     print("Prefijo:", linea[:80])

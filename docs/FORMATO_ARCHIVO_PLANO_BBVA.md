@@ -15,7 +15,7 @@ El programa replica esta estructura en
 | 3 | Dígito verificación | 1 | Columna C |
 | 4 | Forma de pago | 1 | Columna E (`1` abono cuenta; **no** se rellena a 2) |
 | 5 | Banco | 4 | Columna F, formato `0000` (si forma ≠ 1 → `0013`) |
-| 6 | Cuenta BBVA | 16 | Ceros si el banco no es BBVA (`0013`) |
+| 6 | Cuenta BBVA | 16 | Solo si banco = `0013`. Ver estructura abajo. Ceros si es otro banco |
 | 7 | Tipo cuenta ACH | 2 | Columna G, formato `00` (`01` corriente, `02` ahorros) |
 | 8 | Número cuenta ACH | 17 | Columna H, relleno con **espacios a la derecha** |
 | 9 | Importe | 15 | Entero + 2 decimales, sin punto, ceros a la izquierda |
@@ -28,6 +28,25 @@ El programa replica esta estructura en
 | 16 | Concepto 1..4 | 40 c/u | Solo si tienen texto; espacios a la derecha |
 
 Con un solo concepto la línea mide **281** caracteres.
+
+### Bloque Cuenta BBVA (16 caracteres, macro `Hallardatoscuenta`)
+
+Solo cuando el banco es `0013` (BBVA) y forma de pago = `1`:
+
+```
+Oficina (4) + "00" + Tipo cuenta (4) + Últimos 6 dígitos cuenta (6)
+```
+
+| Parte | Origen | Ejemplo |
+|---|---|---|
+| Oficina | `"0"` + primeros 3 dígitos de la cuenta | cuenta `232217414` → `0232` |
+| Separador | fijo `00` | `00` |
+| Tipo cuenta | columna G con formato `00` + `00` | corriente `01` → `0100`; ahorros `02` → `0200` |
+| Número | últimos 6 dígitos de la cuenta | `217414` |
+
+Ejemplo completo: cuenta `232217414`, tipo `02` → `0232000200217414`
+
+**Importante:** el tipo va como `01`/`02` (dos dígitos), no como `1`/`2`. Si se usa un solo dígito queda un cero de más al rellenar el campo.
 
 ## Codificación y fin de línea
 

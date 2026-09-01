@@ -1,0 +1,51 @@
+{
+  "total": 1303,
+  "dist": {
+    "2": 804,
+    "1": 499
+  },
+  "matched_excel": 1295,
+  "coincide_tipo": 1295,
+  "mismatches_count": 0,
+  "mismatches": [],
+  "nequi_tipo1": [
+    {
+      "identificacion": "1100893628",
+      "razon_social": "CRISTIAN JAVIER GUERRERO",
+      "numero_cuenta": "3154785766",
+      "id": 2642
+    },
+    {
+      "identificacion": "63369653",
+      "razon_social": "LILIANA ALMEIDA GARCIA",
+      "numero_cuenta": "3187487690",
+      "id": 2644
+    }
+  ],
+  "sospechosos_celular_tc1": [
+    {
+      "id": 82,
+      "identificacion": "900396759",
+      "razon_social": "CHILCO DISTRIBUIDORA DE GAS",
+      "banco": 7,
+      "banco_nombre": "BANCOLOMBIA",
+      "cuenta": "3165119640"
+    },
+    {
+      "id": 2642,
+      "identificacion": "1100893628",
+      "razon_social": "CRISTIAN JAVIER GUERRERO",
+      "banco": 507,
+      "banco_nombre": "NEQUI",
+      "cuenta": "3154785766"
+    },
+    {
+      "id": 2644,
+      "identificacion": "63369653",
+      "razon_social": "LILIANA ALMEIDA GARCIA",
+      "banco": 507,
+      "banco_nombre": "NEQUI",
+      "cuenta": "3187487690"
+    }
+  ]
+}

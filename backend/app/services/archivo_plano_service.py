@@ -113,10 +113,14 @@ def _bloques_cuenta(pago: Pago) -> tuple[str, str, str, str]:
 
     banco_txt = f"{banco:04d}"
     if banco == BANCO_BBVA:
+        # Macro Hallardatoscuenta (Planocash):
+        # Cuentabbva = Oficinabbva + "00" + (TipoCuenta.Text + "00") + Right(cuenta, 6)
+        # TipoCuenta.Text viene con formato "01"/"02", no "1"/"2".
         oficinabbva = f"0{(cuenta[:3] if cuenta else '000').zfill(3)[-3:]}"
-        tipocuentabbva = f"{int(pago.tipo_cuenta)}00"
+        tipocuentabbva = f"{_tipo_cuenta_plano(pago)}00"
         cuentabbva = f"{oficinabbva}00{tipocuentabbva}{cuenta[-6:].zfill(6)}"
-        cuentabbva = (cuentabbva + "0" * 16)[:16]
+        if len(cuentabbva) != 16:
+            cuentabbva = (cuentabbva + "0" * 16)[:16]
         return banco_txt, cuentabbva, "00", "0" * CUENTA_ACH_LENGTH
 
     return (
